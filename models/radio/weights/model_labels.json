@@ -1,0 +1,29 @@
+{
+    "pneumonia_model":{
+        "0" : "normal",
+        "1" : "pneumonia"
+    },
+    
+    "multiple_diseases": {
+        "0" : "covid_19",
+        "1" : "lung_opacity",
+        "2" : "normal",
+        "3" : "pneumonia",
+        "4" : "tuberculosis"
+    },
+
+    "region_xray_classification" : {
+        "0" : "head",
+        "1" : "chest", 
+        "2" : "abdomen",
+        "3" : "limbs", 
+        "4" : "spine", 
+        "5" : "unk"
+    },
+
+    "modality_model" : {
+        "0" : "mri", 
+        "1" : "tc", 
+        "2" : "xray"
+    }
+}

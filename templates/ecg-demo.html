@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="{{ url_for('static', path='styles/ecg-demo.css') }}" rel="stylesheet">
+    <title>Image Upload App</title>
+</head>
+
+<body>
+    <div class="container">
+        <div class="image-section">
+            <h2 class="title">Upload Image</h2>
+            <div class="upload-container">
+                <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                <button class="upload-btn" id="uploadBtn">Choose Image</button>
+                <p class="upload-instructions">Supported formats: JPG, PNG, GIF</p>
+            </div>
+            <div class="image-container" id="imageContainer">
+                <img id="imagePreview" src="" alt="Image Preview">
+            </div>
+        </div>
+
+        <div class="result-section">
+            <h2 class="title">AI Analysis Results</h2>
+            <div id="resultContainer" class="result-card">
+                <div class="gravity-container">
+                    <div class="gravity-label">Gravity:</div>
+                    <div class="gravity-value" id="gravityValue">very grave</div>
+                </div>
+
+                <div class="description-container" id="descriptionContainer">
+                    <div class="description-label">Description:</div>
+                    <ul class="description-list" id="descriptionList">
+                        <!-- Description items will be added here -->
+                    </ul>
+                </div>
+            </div>
+            <p class="placeholder-text" id="placeholderText">Upload an image to see AI analysis results</p>
+        </div>
+    </div>
+    <script src="{{ url_for('static', path='scripts/ecg-demo.js') }}"></script>
+</body>
+
+</html>

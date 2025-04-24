@@ -46,6 +46,11 @@ def homepage(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
 
 
+@app.get("/ecg")
+def homepage(request: Request):
+    return templates.TemplateResponse(request=request, name="ecg-demo.html")
+
+
 @app.get("/status")
 def status():
     return {"status": "Service seems to be running!"}

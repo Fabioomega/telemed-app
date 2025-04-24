@@ -7,6 +7,7 @@ from .model import (
     load_region_model,
     load_pneumonia_model,
 )
+from ..internals import announce_start
 from functools import lru_cache
 
 
@@ -54,11 +55,13 @@ class RegionModel(ManagedModel):
 
 
 @lru_cache(maxsize=1)
+@announce_start("Modality Classifier")
 def create_modality(cuda_devices, batch_size, max_latency, worker_num):
     return Streamer(ModalityModel, batch_size, max_latency, worker_num, cuda_devices)
 
 
 @lru_cache(maxsize=1)
+@announce_start("Diseases Classifier")
 def create_diseases(cuda_devices, batch_size, max_latency, worker_num):
     return Streamer(
         MultipleDiseasesModel, batch_size, max_latency, worker_num, cuda_devices
@@ -66,5 +69,6 @@ def create_diseases(cuda_devices, batch_size, max_latency, worker_num):
 
 
 @lru_cache(maxsize=1)
+@announce_start("Region Classifier")
 def create_region(cuda_devices, batch_size, max_latency, worker_num):
     return Streamer(RegionModel, batch_size, max_latency, worker_num, cuda_devices)

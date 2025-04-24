@@ -3,6 +3,7 @@ from typing import List, Dict
 from service_streamer import ManagedModel, Streamer
 from .model_api import load_clip_model
 from functools import lru_cache
+from ..internals import announce_start
 
 
 class ECGClassifier(ManagedModel):
@@ -15,5 +16,6 @@ class ECGClassifier(ManagedModel):
 
 
 @lru_cache(maxsize=1)
+@announce_start("ECG Classifier")
 def create_ecg_classifier(cuda_devices, batch_size, max_latency, worker_num):
     return Streamer(ECGClassifier, batch_size, max_latency, worker_num, cuda_devices)

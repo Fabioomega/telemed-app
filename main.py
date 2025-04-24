@@ -24,25 +24,17 @@ BATCH_SIZE = 2
 MAX_LATENCY = 0.1
 WORKER_NUM = 1
 
-print("Loading Multiple Diseases Streamer...")
 multiple_diseases_streamer = create_diseases(
     CUDA_DEVICES, BATCH_SIZE, MAX_LATENCY, WORKER_NUM
 )
-print("Finished loading Multiple Diseases Streamer!")
 
-print("Loading ECG Classifier...")
 ecg_classifier_streamer = create_ecg_classifier(
     CUDA_DEVICES, BATCH_SIZE, MAX_LATENCY, WORKER_NUM
 )
-print("Finished loading ECG Classifier!")
 
-print("Loading Modality Classifier...")
 modality_streamer = create_modality(CUDA_DEVICES, BATCH_SIZE, MAX_LATENCY, WORKER_NUM)
-print("Finished loading Modality Classifier!")
 
-print("Loading Region Classifier...")
 region_streamer = create_region(CUDA_DEVICES, BATCH_SIZE, MAX_LATENCY, WORKER_NUM)
-print("Finished loading Region Classifier!")
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")

@@ -5,13 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="{{ url_for('static', path='styles/ecg-demo.css') }}" rel="stylesheet">
-    <title>Image Upload App</title>
+    <title>ECG Upload Demo</title>
 </head>
 
 <body>
     <div class="container">
         <div class="image-section">
-            <h2 class="title">Upload Image</h2>
+            <h2 class="title">Upload ECG Image</h2>
             <div class="upload-container">
                 <input type="file" id="imageUpload" accept="image/*" style="display: none;">
                 <button class="upload-btn" id="uploadBtn">Choose Image</button>
@@ -27,13 +27,13 @@
             <div id="resultContainer" class="result-card">
                 <div class="gravity-container">
                     <div class="gravity-label">Gravity:</div>
-                    <div class="gravity-value" id="gravityValue">very grave</div>
+                    <div class="gravity-value" id="gravityValue"></div>
                 </div>
 
-                <div class="description-container" id="descriptionContainer">
+                <div class="description-container" id="descriptionContainer" style="display: none;">
                     <div class="description-label">Description:</div>
                     <ul class="description-list" id="descriptionList">
-                        <!-- Description items will be added here -->
+                        <!-- Items injected by JS -->
                     </ul>
                 </div>
             </div>

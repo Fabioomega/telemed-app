@@ -1,70 +1,69 @@
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', () => {
     const uploadBtn = document.getElementById('uploadBtn');
     const imageUpload = document.getElementById('imageUpload');
     const imagePreview = document.getElementById('imagePreview');
     const imageContainer = document.getElementById('imageContainer');
     const resultContainer = document.getElementById('resultContainer');
+    const placeholderText = document.getElementById('placeholderText');
     const gravityValue = document.getElementById('gravityValue');
     const descriptionContainer = document.getElementById('descriptionContainer');
     const descriptionList = document.getElementById('descriptionList');
-    const placeholderText = document.getElementById('placeholderText');
 
-    // Mock AI response for demo purposes
-    const mockAiResponse = {
-        gravity: "very grave",
-        description: ["Hello", "World"]
-    };
+    uploadBtn.addEventListener('click', () => imageUpload.click());
 
-    uploadBtn.addEventListener('click', function () {
-        imageUpload.click();
+    imageUpload.addEventListener('change', () => {
+        const file = imageUpload.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const dataUrl = e.target.result;
+            imagePreview.src = dataUrl;
+            imagePreview.style.display = 'block';
+            imageContainer.classList.add('has-image');
+
+            try {
+                const base64 = dataUrl.split(',')[1];
+                const res = await fetch('/ecg-descritores', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ img: base64 })
+                });
+                const json = await res.json();
+                renderResults(json);
+            } catch (err) {
+                console.error(err);
+            }
+        };
+        reader.readAsDataURL(file);
     });
 
-    imageUpload.addEventListener('change', function () {
-        const file = this.files[0];
-        if (file) {
-            const reader = new FileReader();
-
-            reader.onload = function (e) {
-                // Display the image
-                imagePreview.src = e.target.result;
-                imagePreview.style.display = 'block';
-                imageContainer.classList.add('has-image');
-
-                // In a real app, you would send the image to your AI service here
-                // For this demo, we'll just show the mock response after a short delay
-                setTimeout(showResults, 500);
-            };
-
-            reader.readAsDataURL(file);
-        }
-    });
-
-    function showResults() {
-        // Display the mock AI results
+    function renderResults(data) {
         placeholderText.style.display = 'none';
         resultContainer.style.display = 'block';
 
-        // Set gravity value
-        gravityValue.textContent = mockAiResponse.gravity;
+        if (data.gravidade) {
+            gravityValue.textContent = data.gravidade;
+        } else {
+            gravityValue.textContent = 'N/A';
+        }
 
-        // Handle description if available
-        if (mockAiResponse.description && mockAiResponse.description.length > 0) {
+        const details = data.grave_classification || [];
+        if (Array.isArray(details) && details.length) {
             descriptionContainer.style.display = 'block';
             descriptionList.innerHTML = '';
-
-            mockAiResponse.description.forEach(item => {
-                const listItem = document.createElement('li');
-                listItem.className = 'description-item';
-                listItem.textContent = item;
-                descriptionList.appendChild(listItem);
+            details.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'description-item';
+                li.textContent = item;
+                descriptionList.appendChild(li);
             });
         } else {
             descriptionContainer.style.display = 'none';
         }
     }
 
-    // For demo purposes, let's add the ability to reset by clicking on the image
-    imageContainer.addEventListener('click', function (e) {
+    imageContainer.addEventListener('click', e => {
         if (e.target === imagePreview && imagePreview.style.display === 'block') {
             imageUpload.value = '';
             imagePreview.style.display = 'none';

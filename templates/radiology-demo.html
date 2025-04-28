@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Upload App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=Open+Sans:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <link href="{{ url_for('static', path='styles/radiology-demo.css') }}" rel="stylesheet">
+</head>
+
+<body>
+
+    <div class="page-container">
+
+        <!-- Image Section (Left) -->
+        <section class="image-section">
+            <h2 class="section-title">Image Upload</h2>
+            <div class="upload-container">
+                <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                <button class="upload-btn" id="uploadBtnTrigger">Choose Image</button>
+                <p class="upload-instructions">Upload a medical image (e.g., X-Ray, CT, MRI)</p>
+            </div>
+            <div class="image-preview-box" id="imagePreviewBox">
+                <img id="uploadedImage" src="#" alt="Uploaded medical image preview">
+            </div>
+        </section>
+
+        <!-- Analysis Section (Right) -->
+        <section class="analysis-section">
+            <h2 class="section-title">AI Analysis & Report</h2>
+
+            <div id="analysisResults" class="results-wrapper">
+                <!-- Placeholder shown initially -->
+                <p class="placeholder-text" id="analysisPlaceholder">Upload an image to view AI analysis results.</p>
+
+                <div class="ai-output-container" id="aiOutputContainer" style="display: none;">
+
+                    <div class="info-card">
+                        <h3 class="card-title">Detected Properties</h3>
+                        <div id="aiHeaders" class="headers-content">
+                            <div class="info-item">
+                                <span class="info-label">Modality:</span>
+                                <span id="modality" class="info-value placeholder-value">N/A</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Region:</span>
+                                <span id="region" class="info-value placeholder-value">N/A</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="info-card">
+                        <h3 class="card-title">Potential Conditions Identified</h3>
+                        <div id="diseaseCheckboxes" class="checkboxes-content">
+                            <span class="placeholder-value">Awaiting analysis...</span>
+                        </div>
+                    </div>
+
+                    <div class="info-card report-card">
+                        <h3 class="card-title">AI Generated Report Draft</h3>
+                        <div class="report-container">
+                            <textarea id="reportOutput" rows="10"
+                                placeholder="AI report draft will appear here. You can edit this text."></textarea>
+                            <div class="report-actions">
+                                <button id="generateBtn" class="action-button"
+                                    title="Generate a new report based on the image">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke-width="1.5" stroke="currentColor" width="16" height="16">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                                    </svg>
+                                    Regenerate
+                                </button>
+                                <button id="completeBtn" class="action-button"
+                                    title="Ask AI to complete the text currently in the report area">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke-width="1.5" stroke="currentColor" width="16" height="16">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
+                                    </svg>
+                                    Complete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div> <!-- End ai-output-container -->
+            </div> <!-- End results-wrapper -->
+
+        </section>
+
+    </div> <!-- End page-container -->
+
+    <script src="{{ url_for('static', path='scripts/radiology-demo.js') }}"></script>
+</body>
+
+</html>

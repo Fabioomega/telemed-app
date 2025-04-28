@@ -176,3 +176,4 @@ cython_debug/
 *.safetensors
 *.h5
 *.keras
+env.json

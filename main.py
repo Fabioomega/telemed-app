@@ -7,7 +7,7 @@ from models import (
     create_diseases,
     create_modality,
     create_region,
-    # create_ecg_classifier,
+    create_ecg_classifier,
 )
 from decode import base64_to_img
 from pydantic import BaseModel
@@ -40,9 +40,9 @@ multiple_diseases_streamer = create_diseases(
     CUDA_DEVICES, BATCH_SIZE, MAX_LATENCY, WORKER_NUM
 )
 
-# ecg_classifier_streamer = create_ecg_classifier(
-#     CUDA_DEVICES, BATCH_SIZE, MAX_LATENCY, WORKER_NUM
-# )
+ecg_classifier_streamer = create_ecg_classifier(
+    CUDA_DEVICES, BATCH_SIZE, MAX_LATENCY, WORKER_NUM
+)
 
 modality_streamer = create_modality(CUDA_DEVICES, BATCH_SIZE, MAX_LATENCY, WORKER_NUM)
 
@@ -90,13 +90,13 @@ def diseases(img: ModelInput) -> Dict[str, bool]:
     return output
 
 
-# @app.post("/ecg-descritores")
-# def read_route(img: ModelInput) -> Dict[str, str | List[str]]:
-#     decoded_img = base64_to_img(img.img)
-#     output: Dict[str, str | List[str]] = ecg_classifier_streamer.predict([decoded_img])[
-#         0
-#     ]
-#     return output
+@app.post("/ecg-descritores")
+def read_route(img: ModelInput) -> Dict[str, str | List[str]]:
+    decoded_img = base64_to_img(img.img)
+    output: Dict[str, str | List[str]] = ecg_classifier_streamer.predict([decoded_img])[
+        0
+    ]
+    return output
 
 
 @app.post("/modalidade")

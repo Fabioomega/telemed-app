@@ -1,6 +1,9 @@
+const image = document.getElementById("imagePreview");
+const imageInput = document.getElementById("imageInput");
+const endpoint = document.getElementById("endpoint").value;
+const resultDiv = document.getElementById("result");
 
 function previewImage(event) {
-    const image = document.getElementById("imagePreview");
     const file = event.target.files[0];
     const reader = new FileReader();
     reader.onload = function (e) {
@@ -11,10 +14,6 @@ function previewImage(event) {
 }
 
 async function uploadImage() {
-    const imageInput = document.getElementById("imageInput");
-    const endpoint = document.getElementById("endpoint").value;
-    const resultDiv = document.getElementById("result");
-
     if (!imageInput.files.length) {
         resultDiv.innerHTML = 'Please select an image.';
         return;

@@ -21,18 +21,29 @@ document.addEventListener('DOMContentLoaded', () => {
             imagePreview.src = dataUrl;
             imagePreview.style.display = 'block';
             imageContainer.classList.add('has-image');
-
+        
+            document.getElementById('loadingSpinner').style.display = 'flex';
+        
+            resultContainer.style.display = 'none';
+            descriptionContainer.style.display = 'none';
+            gravityValue.textContent = '';
+            placeholderText.style.display = 'none';
             try {
                 const base64 = dataUrl.split(',')[1];
                 const res = await fetch('/ecg-descritores', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ img: base64 })
                 });
+        
                 const json = await res.json();
                 renderResults(json);
             } catch (err) {
                 console.error(err);
+                placeholderText.textContent = 'Erro ao processar a imagem.';
+                placeholderText.style.display = 'block';
+            } finally {
+                document.getElementById('loadingSpinner').style.display = 'none';
             }
         };
         reader.readAsDataURL(file);

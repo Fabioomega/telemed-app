@@ -1,4 +1,4 @@
-torch~=2.6
+torch~=2.5
 torchvision~=0.21
 fastapi[all]~=0.115
 uvicorn~=0.34.0

@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="{{ url_for('static', path='styles/ecg-demo.css') }}" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <title>ECG Upload Demo</title>
 </head>
 
@@ -13,9 +14,9 @@
         <div class="image-section">
             <h2 class="title">Upload ECG Image</h2>
             <div class="upload-container">
-                <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                <input type="file" id="imageUpload" accept="image/*,application/pdf" style="display: none;">
                 <button class="upload-btn" id="uploadBtn">Choose Image</button>
-                <p class="upload-instructions">Supported formats: JPG, PNG, GIF</p>
+                <p class="upload-instructions">Supported formats: JPG, PNG, PDF, GIF</p>
             </div>
             <div class="image-container" id="imageContainer">
                 <img id="imagePreview" src="" alt="Image Preview">

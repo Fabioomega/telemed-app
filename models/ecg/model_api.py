@@ -53,7 +53,6 @@ def map_tensor_to_nonzero_list(tensor: torch.IntTensor) -> Iterable[List[int]]:
 def pack_to_dict(pack: List[str], label: str) -> List[Dict[str, str]]:
     return [{label: p} for p in pack]
 
-
 class CLIPVisionModelWrapper:
     def __init__(
         self,
@@ -132,9 +131,12 @@ class CLIPVisionModelWrapper:
                 pred_indices_grave = map_tensor_to_nonzero_list(probs_grave > 0.5)
 
                 for idx, pred_indices in zip(indexes, pred_indices_grave):
-                    result[idx]["grave_classification"] = map_list_to_unique_id(
-                        pred_indices, self.id_to_label_grave
-                    )
+                    if pred_indices:
+                        result[idx]["grave_classification"] = map_list_to_unique_id(
+                            pred_indices, self.id_to_label_grave
+                        )
+                    else:
+                        result[idx]["grave_classification"] = ["Nao Identificado"]
 
         return result
 

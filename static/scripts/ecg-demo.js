@@ -11,43 +11,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     uploadBtn.addEventListener('click', () => imageUpload.click());
 
-    imageUpload.addEventListener('change', () => {
-        const file = imageUpload.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const dataUrl = e.target.result;
-            imagePreview.src = dataUrl;
-            imagePreview.style.display = 'block';
-            imageContainer.classList.add('has-image');
-        
-            document.getElementById('loadingSpinner').style.display = 'flex';
-        
-            resultContainer.style.display = 'none';
-            descriptionContainer.style.display = 'none';
-            gravityValue.textContent = '';
-            placeholderText.style.display = 'none';
-            try {
-                const base64 = dataUrl.split(',')[1];
-                const res = await fetch('/ecg-descritores', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ img: base64 })
-                });
-        
-                const json = await res.json();
-                renderResults(json);
-            } catch (err) {
-                console.error(err);
-                placeholderText.textContent = 'Erro ao processar a imagem.';
-                placeholderText.style.display = 'block';
-            } finally {
-                document.getElementById('loadingSpinner').style.display = 'none';
-            }
-        };
-        reader.readAsDataURL(file);
-    });
+    async function processImage(dataUrl) {
+        const base64 = dataUrl.split(',')[1];
+    
+        document.getElementById('loadingSpinner').style.display = 'flex';
+        resultContainer.style.display = 'none';
+        descriptionContainer.style.display = 'none';
+        gravityValue.textContent = '';
+        placeholderText.style.display = 'none';
+    
+        try {
+            const res = await fetch('/ecg-descritores', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ img: base64 })
+            });
+            const json = await res.json();
+            renderResults(json);
+        } catch (err) {
+            console.error(err);
+            placeholderText.textContent = 'Erro ao processar a imagem.';
+            placeholderText.style.display = 'block';
+        } finally {
+            document.getElementById('loadingSpinner').style.display = 'none';
+        }
+    }
 
     function renderResults(data) {
         placeholderText.style.display = 'none';
@@ -73,6 +61,50 @@ document.addEventListener('DOMContentLoaded', () => {
             descriptionContainer.style.display = 'none';
         }
     }
+    
+    imageUpload.addEventListener('change', () => {
+        const file = imageUpload.files[0];
+        if (!file) return;
+    
+        if (file.type === "application/pdf") {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const typedarray = new Uint8Array(e.target.result);
+    
+                const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
+                const page = await pdf.getPage(1);
+    
+                const viewport = page.getViewport({ scale: 2.0 });
+                const canvas = document.createElement("canvas");
+                const context = canvas.getContext("2d");
+    
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+    
+                await page.render({ canvasContext: context, viewport }).promise;
+    
+                const dataUrl = canvas.toDataURL("image/png");
+    
+                imagePreview.src = dataUrl;
+                imagePreview.style.display = 'block';
+                imageContainer.classList.add('has-image');
+    
+                await processImage(dataUrl);
+            };
+            reader.readAsArrayBuffer(file);
+        } else {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const dataUrl = e.target.result;
+                imagePreview.src = dataUrl;
+                imagePreview.style.display = 'block';
+                imageContainer.classList.add('has-image');
+    
+                await processImage(dataUrl);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
 
     imageContainer.addEventListener('click', e => {
         if (e.target === imagePreview && imagePreview.style.display === 'block') {

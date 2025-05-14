@@ -12,7 +12,7 @@ from models import (
 from decode import base64_to_img
 from pydantic import BaseModel
 from typing import Dict, List
-from completion import LLM, Block
+from completion import LLMOllama, LLMOpenAI, Block
 from env import load_env
 
 
@@ -48,7 +48,12 @@ modality_streamer = create_modality(CUDA_DEVICES, BATCH_SIZE, MAX_LATENCY, WORKE
 
 region_streamer = create_region(CUDA_DEVICES, BATCH_SIZE, MAX_LATENCY, WORKER_NUM)
 
-ollama = LLM(
+if env.get("use-ollama"):
+    BACKEND = LLMOllama
+else:
+    BACKEND = LLMOpenAI
+
+llm = BACKEND(
     env.get("host"),
     env.get("prompt"),
     env.get("model"),
@@ -115,9 +120,9 @@ def region(img: ModelInput) -> Dict[str, bool]:
 
 @app.post("/gerar-laudo")
 async def gerar_report(inp: ModelInput) -> LLMOutput:
-    return LLMOutput(generated_text=await ollama.generate(inp.img))
+    return LLMOutput(generated_text=await llm.generate(inp.img))
 
 
 @app.post("/completar-laudo")
 async def complete_report(inp: LLMCompleteInput) -> LLMOutput:
-    return LLMOutput(generated_text=await ollama.complete(inp.start, inp.img))
+    return LLMOutput(generated_text=await llm.complete(inp.start, inp.img))

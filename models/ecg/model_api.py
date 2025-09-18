@@ -56,32 +56,21 @@ def pack_to_dict(pack: List[str], label: str) -> List[Dict[str, str]]:
 class CLIPVisionModelWrapper:
     def __init__(
         self,
-        gravidade_model_path: str,
-        gravidade_label_json: str,
-        grave_model_path: str,
-        grave_label_json: str,
+        model_path: str,
+        label_json: str,
     ):
-        self.label_to_id_gravidade = load_json(gravidade_label_json)
-        self.id_to_label_gravidade = {
-            v: k for k, v in self.label_to_id_gravidade.items()
+        self.label_to_id = load_json(label_json)
+        self.id_to_label = {
+            v: k for k, v in self.label_to_id.items()
         }
-        self.num_labels_gravidade = len(self.label_to_id_gravidade)
+        self.num_labels = len(self.id_to_label)
 
-        self.label_to_id_grave = load_json(grave_label_json)
-        self.id_to_label_grave = {v: k for k, v in self.label_to_id_grave.items()}
-        self.num_labels_grave = len(self.label_to_id_grave)
-
-        self.gravidade_model = CLIPVisionClassifier(
-            num_labels=self.num_labels_gravidade
+        self.model = CLIPVisionClassifier(
+            num_labels=self.num_labels
         )
-        gravidade_state = load_file(gravidade_model_path)
-        self.gravidade_model.load_state_dict(gravidade_state)
-        self.gravidade_model.eval()
-
-        self.grave_model = CLIPVisionClassifier(num_labels=self.num_labels_grave)
-        grave_state = load_file(grave_model_path)
-        self.grave_model.load_state_dict(grave_state)
-        self.grave_model.eval()
+        model_state = load_file(model_path)
+        self.model.load_state_dict(model_state)
+        self.model.eval()
 
         self.feature_extractor = CLIPImageProcessor.from_pretrained(
             "openai/clip-vit-large-patch14"
@@ -102,51 +91,28 @@ class CLIPVisionModelWrapper:
             inputs = self.feature_extractor(images, return_tensors="pt")["pixel_values"]
         else:
             raise TypeError(
-                f"Inputs should be of type List[np.ndarray] | List[str] | List[Image.Image] but got {type(inputs)}"
+                f"Inputs should be of type List[np.ndarray] | List[str] | List[Image.Image] but got {type(images)}"
             )
 
         with torch.no_grad():
-            logits_gravidade = self.gravidade_model(inputs)
-            probs_gravidade = F.softmax(logits_gravidade, dim=1)
-            pred_idx_gravidade = torch.argmax(probs_gravidade, dim=1).chunk(len(images))
-            labels_gravidade = map_tensor_to_id(
-                pred_idx_gravidade, self.id_to_label_gravidade
+            logits = self.model(inputs)
+            probs = F.softmax(logits, dim=1)
+            pred_idx = torch.argmax(probs, dim=1).chunk(len(images))
+            labels = map_tensor_to_id(
+                pred_idx, self.id_to_label
             )
 
-        result = pack_to_dict(labels_gravidade, "gravidade")
-
-        indexes = [
-            i for i in range(len(images)) if labels_gravidade[i].lower() == "grave"
-        ]
-
-        if len(indexes) != 0:
-            indexes_set = set(indexes)
-            inputs = torch.stack(
-                [inp for i, inp in enumerate(inputs) if i in indexes_set]
-            )
-
-            with torch.no_grad():
-                logits_grave = self.grave_model(inputs)
-                probs_grave = torch.sigmoid(logits_grave)
-                pred_indices_grave = map_tensor_to_nonzero_list(probs_grave > 0.5)
-
-                for idx, pred_indices in zip(indexes, pred_indices_grave):
-                    if pred_indices:
-                        result[idx]["grave_classification"] = map_list_to_unique_id(
-                            pred_indices, self.id_to_label_grave
-                        )
-                    else:
-                        result[idx]["grave_classification"] = ["Nao Identificado"]
+        result = pack_to_dict(labels, "gravidade")
 
         return result
 
-    def predict_by_path(self, image_path: str) -> Dict:
+    def predict_by_path(self, image_path: str) -> List[Dict[str, str]]:
         return self.predict([image_path])
 
     def store_feedback_by_path(
-        self, image_path: str, true_label: int, model_type: str = "gravidade"
+        self, image_path: str, true_label: int, model_type: str = "classification"
     ):
-        pixel_values = load_image([image_path], self.feature_extractor)
+        pixel_values = load_image(image_path, self.feature_extractor)
         self.feedback_data.append((pixel_values, true_label, model_type))
 
 
@@ -155,16 +121,12 @@ import pathlib
 _BASE_PATH = pathlib.Path(__file__).parent
 _WEIGHTS_PATH = _BASE_PATH.joinpath("weights")
 
-_GRAVIDADE_MODEL_PATH = _WEIGHTS_PATH.joinpath("gravidade_model.safetensors")
-_GRAVIDADE_LABELS_JSON = _BASE_PATH.joinpath("gravidade_label_to_id.json")
-_GRAVE_MODEL_PATH = _WEIGHTS_PATH.joinpath("grave_model.safetensors")
-_GRAVE_LABELS_JSON = _BASE_PATH.joinpath("grave_label_to_id.json")
+_MODEL_PATH = _WEIGHTS_PATH.joinpath("model.safetensors")
+_LABELS_JSON = _BASE_PATH.joinpath("label_to_id.json")
 
 load_clip_model = lambda: CLIPVisionModelWrapper(
-    gravidade_model_path=_GRAVIDADE_MODEL_PATH,
-    gravidade_label_json=_GRAVIDADE_LABELS_JSON,
-    grave_model_path=_GRAVE_MODEL_PATH,
-    grave_label_json=_GRAVE_LABELS_JSON,
+    model_path=str(_MODEL_PATH),
+    label_json=str(_LABELS_JSON),
 )
 
 if __name__ == "__main__":

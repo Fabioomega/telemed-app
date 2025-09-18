@@ -6,8 +6,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultContainer = document.getElementById('resultContainer');
     const placeholderText = document.getElementById('placeholderText');
     const gravityValue = document.getElementById('gravityValue');
-    const descriptionContainer = document.getElementById('descriptionContainer');
-    const descriptionList = document.getElementById('descriptionList');
 
     uploadBtn.addEventListener('click', () => imageUpload.click());
 
@@ -16,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
         document.getElementById('loadingSpinner').style.display = 'flex';
         resultContainer.style.display = 'none';
-        descriptionContainer.style.display = 'none';
         gravityValue.textContent = '';
         placeholderText.style.display = 'none';
     
@@ -41,24 +38,10 @@ document.addEventListener('DOMContentLoaded', () => {
         placeholderText.style.display = 'none';
         resultContainer.style.display = 'block';
 
-        if (data.gravidade) {
+        if (data.gravidade && data.gravidade !== 'None') {
             gravityValue.textContent = data.gravidade;
         } else {
-            gravityValue.textContent = 'N/A';
-        }
-
-        const details = data.grave_classification || [];
-        if (Array.isArray(details) && details.length) {
-            descriptionContainer.style.display = 'block';
-            descriptionList.innerHTML = '';
-            details.forEach(item => {
-                const li = document.createElement('li');
-                li.className = 'description-item';
-                li.textContent = item;
-                descriptionList.appendChild(li);
-            });
-        } else {
-            descriptionContainer.style.display = 'none';
+            gravityValue.textContent = 'Not Identified';
         }
     }
     

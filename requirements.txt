@@ -1,5 +1,5 @@
 torch~=2.5
-torchvision~=0.21
+torchvision~=0.20
 fastapi[all]~=0.115
 uvicorn~=0.34.0
 service_streamer

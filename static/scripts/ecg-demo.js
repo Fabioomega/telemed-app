@@ -39,7 +39,16 @@ document.addEventListener('DOMContentLoaded', () => {
         resultContainer.style.display = 'block';
 
         if (data.gravidade && data.gravidade !== 'None') {
-            gravityValue.textContent = data.gravidade;
+            if (Array.isArray(data.gravidade)) {
+                const filteredLabels = data.gravidade.filter(label => label !== 'None');
+                if (filteredLabels.length > 0) {
+                    gravityValue.innerHTML = filteredLabels.join('<br>');
+                } else {
+                    gravityValue.textContent = 'Não Identificado';
+                }
+            } else {
+                gravityValue.textContent = data.gravidade;
+            }
         } else {
             gravityValue.textContent = 'Not Identified';
         }

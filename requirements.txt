@@ -10,3 +10,4 @@ safetensors
 pillow
 ollama
 openai
+scipy

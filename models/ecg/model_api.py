@@ -6,6 +6,7 @@ from PIL import Image
 from typing import Dict, List, Tuple, Iterable
 import numpy as np
 import torch.nn.functional as F
+from scipy.special import expit
 
 
 class CLIPVisionClassifier(torch.nn.Module):
@@ -65,6 +66,18 @@ class CLIPVisionModelWrapper:
         }
         self.num_labels = len(self.id_to_label)
 
+        self.label_descriptions = {
+            "ADRV": "Alteração Difusa da Repolarização Ventricular",
+            "AEI (ZEI)": "Área Eletricamente Inativa (Zona Eletricamente Inativa)",
+            "AFCRD": "Atraso Final da Condução pelo Ramo Direito",
+            "ARV": "Alteração da Repolarização Ventricular",
+            "Desvio Eixo - E": "Desvio do Eixo para a Esquerda",
+            "NORMAL/DLN": "Normal/Dentro dos Limites da Normalidade",
+            "None": "Baixa confiança ou nenhum descritor suportado",
+            "SVE": "Sobrecarga Ventricular Esquerda",
+            "TS": "Taquicardia Sinusal"
+        }
+
         self.model = CLIPVisionClassifier(
             num_labels=self.num_labels
         )
@@ -78,36 +91,61 @@ class CLIPVisionModelWrapper:
 
         self.feedback_data = []
 
+    def format_label_with_description(self, label: str) -> str:
+        if label in self.label_descriptions:
+            return f"{label}: {self.label_descriptions[label]}"
+        return label
+
     def predict(
-        self, images: List[np.ndarray] | List[str] | List[Image.Image]
-    ) -> List[Dict[str, str]]:
+        self, images: List[np.ndarray] | List[str] | List[Image.Image], 
+        threshold: float = 0.5
+    ) -> List[Dict[str, str | List[str]]]:
         if not isinstance(images, List) or len(images) == 0:
             raise ValueError("Inputs is not a list or is empty!")
 
-        if isinstance(images[0], str):
-            image = [Image.open(image).convert("RGB") for image in images]
-            inputs = self.feature_extractor(image, return_tensors="pt")["pixel_values"]
-        elif isinstance(images[0], Image.Image) or isinstance(images[0], np.ndarray):
-            inputs = self.feature_extractor(images, return_tensors="pt")["pixel_values"]
-        else:
-            raise TypeError(
-                f"Inputs should be of type List[np.ndarray] | List[str] | List[Image.Image] but got {type(images)}"
-            )
+        processed_images = []
+        for img in images:
+            if isinstance(img, str):
+                processed_images.append(Image.open(img).convert("RGB"))
+            elif isinstance(img, np.ndarray):
+                processed_images.append(Image.fromarray(img).convert("RGB"))
+            elif isinstance(img, Image.Image):
+                processed_images.append(img.convert("RGB"))
+            else:
+                raise TypeError(f"Unsupported image type: {type(img)}")
+        
+        inputs = self.feature_extractor(processed_images, return_tensors="pt")["pixel_values"]
 
+        results = []
+        self.model.eval()
+        
         with torch.no_grad():
             logits = self.model(inputs)
-            probs = F.softmax(logits, dim=1)
-            pred_idx = torch.argmax(probs, dim=1).chunk(len(images))
-            labels = map_tensor_to_id(
-                pred_idx, self.id_to_label
-            )
+            probs = expit(logits.cpu().numpy())
+            preds = (probs >= threshold).astype(int)
+            
+            for i in range(len(images)):
 
-        result = pack_to_dict(labels, "gravidade")
+                preds[i, 6] = 0
+                probs[i, 6] = 0.0
+                
+                predicted_indices = np.where(preds[i] >= threshold)[0]
+                predicted_indices = predicted_indices[predicted_indices != 6]
+                
+                if len(predicted_indices) > 0:
+                    label_acronyms = [self.id_to_label[idx] for idx in predicted_indices]
+                    formatted_labels = [self.format_label_with_description(label) for label in label_acronyms]
+                    if len(formatted_labels) == 1:
+                        results.append({"gravidade": formatted_labels[0]})
+                    else:
+                        results.append({"gravidade": formatted_labels})
+                else:
+                    results.append({"gravidade": "Não Identificado"})
+        
+        return results
 
-        return result
-
-    def predict_by_path(self, image_path: str) -> List[Dict[str, str]]:
-        return self.predict([image_path])
+    def predict_by_path(self, image_path: str, threshold: float = 0.5) -> List[Dict[str, str | List[str]]]:
+        return self.predict([image_path], threshold=threshold)
 
     def store_feedback_by_path(
         self, image_path: str, true_label: int, model_type: str = "classification"

@@ -12,24 +12,14 @@ from models import (
 from decode import base64_to_img
 from pydantic import BaseModel
 from typing import Dict, List
-from completion import LLMOllama, LLMOpenAI, Block
-from env import load_env
+from environment_loader import Environment
 
 
 class ModelInput(BaseModel):
     img: str
 
 
-class LLMCompleteInput(BaseModel):
-    start: str
-    img: str
-
-
-class LLMOutput(BaseModel):
-    generated_text: str
-
-
-env = load_env("env.json")
+env = Environment("env.json")
 
 CUDA_DEVICES = None  # (0,)
 BATCH_SIZE = 2
@@ -48,20 +38,6 @@ modality_streamer = create_modality(CUDA_DEVICES, BATCH_SIZE, MAX_LATENCY, WORKE
 
 region_streamer = create_region(CUDA_DEVICES, BATCH_SIZE, MAX_LATENCY, WORKER_NUM)
 
-if env.get("use-ollama"):
-    BACKEND = LLMOllama
-else:
-    BACKEND = LLMOpenAI
-
-llm = BACKEND(
-    env.get("host"),
-    env.get("prompt"),
-    env.get("model"),
-    env.get("image_token"),
-    env.get("base_template"),
-    Block(env.get("prompt_start_user"), env.get("prompt_end_user")),
-    Block(env.get("prompt_start_assistant"), env.get("prompt_end_assistant")),
-)
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -116,13 +92,3 @@ def region(img: ModelInput) -> Dict[str, bool]:
     decoded_img = base64_to_img(img.img)
     output = region_streamer.predict([decoded_img])[0]
     return output
-
-
-@app.post("/gerar-laudo")
-async def gerar_report(inp: ModelInput) -> LLMOutput:
-    return LLMOutput(generated_text=await llm.generate(inp.img))
-
-
-@app.post("/completar-laudo")
-async def complete_report(inp: LLMCompleteInput) -> LLMOutput:
-    return LLMOutput(generated_text=await llm.complete(inp.start, inp.img))

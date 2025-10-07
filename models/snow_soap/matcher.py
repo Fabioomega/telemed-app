@@ -272,7 +272,7 @@ def fuse_pairs_and_keywords(pairs: List[PairedText], keywords: Keywords) -> Keyw
     return new_keywords
 
 
-def match_keywords(
+async def match_keywords(
     client: ClientBase,
     original_text: str,
     translated_text: str,
@@ -287,7 +287,9 @@ def match_keywords(
 
 - Target Words to Correlate: {{{target_words}}}"""
 
-    pairs = format_desired_answer(client.query(prompt, SYS_PROMPT, verbose=verbose))
+    pairs = format_desired_answer(
+        await client.async_query(prompt, SYS_PROMPT, verbose=verbose)
+    )
 
     pairs = spell_check_pairs(original_text, keywords, pairs)
 

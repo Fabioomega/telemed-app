@@ -1,7 +1,6 @@
-import subprocess
 import glob
 import os
-import sys
+import asyncio
 import pandas as pd
 from typing import NamedTuple, Union, List, Dict
 from pathlib import Path
@@ -44,7 +43,7 @@ def find_ctakes_home_folder(ctakes_path: Path) -> Path:
     ).parent
 
 
-def run_ctakes(
+async def run_ctakes(
     ctakes_path: Union[Path, str],
     input_path: Union[Path, str],
     output_path: Union[Path, str],
@@ -65,21 +64,35 @@ def run_ctakes(
     elif os.name == "posix":
         ctake_shell = paths.unix_path
     else:
-        print(
-            "[WARNING] I don't know what OS you're running on. I will guess is some obscure posix-like system and supports bash!"
-        )
+        print("[WARNING] Unknown OS. Assuming POSIX-like.")
         ctake_shell = paths.unix_path
 
     env = os.environ.copy()
     env["CTAKES_HOME"] = str(home.absolute())
 
-    # For testing with a nice looking html add '--htmlOut {output_path.absolute()}'
-    proc = subprocess.Popen(
-        f"{ctake_shell.absolute()} -i {input_path.absolute()} -o {output_path.absolute()} --key {api_key} --piper {piper_path.absolute()}",
-        shell=True,
-        env=env,
+    command = (
+        f"{ctake_shell.absolute()} "
+        f"-i {input_path.absolute()} "
+        f"-o {output_path.absolute()} "
+        f"--key {api_key} "
+        f"--piper {piper_path.absolute()}"
     )
-    proc.wait()
+
+    proc = await asyncio.create_subprocess_shell(
+        command,
+        env=env,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+
+    stdout, stderr = await proc.communicate()
+
+    if proc.returncode != 0:
+        print(f"[ERROR] cTAKES failed with code {proc.returncode}")
+        print(stderr.decode())
+    else:
+        print(f"[INFO] cTAKES completed successfully")
+        print(stdout.decode())
 
 
 def get_number(s: str) -> int:
@@ -142,7 +155,7 @@ def extract_keywords(filepath: Path) -> Keywords:
     return keywords
 
 
-def index_texts(
+async def index_texts(
     texts: List[str], ctakes_path: Union[Path, str], api_key: str
 ) -> Dict[int, Keywords]:
     os.makedirs("./input", exist_ok=True)
@@ -151,7 +164,7 @@ def index_texts(
     for i, text in enumerate(texts):
         create_file(Path(f"./input/{i}.txt"), text)
 
-    run_ctakes(ctakes_path, "./input", "./output", "./csvbruh.piper", api_key)
+    await run_ctakes(ctakes_path, "./input", "./output", "./csvbruh.piper", api_key)
 
     tables = get_tables_paths(Path("./output"))
     indexed_table = {}
@@ -163,7 +176,7 @@ def index_texts(
 
 if __name__ == "__main__":
     ctakes_path = Path("apache-ctakes-6.0.0-bin")
-    text = """Radiology Report - Chest X-ray (PA & Lateral Views)
+    text = """Radiology Report – Chest X-ray (PA & Lateral Views)
 Study Date: 2025-09-07
 Indication: Cough, fever, rule out pneumonia
 

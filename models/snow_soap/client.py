@@ -1,4 +1,5 @@
 import requests
+import httpx
 from typing import Dict
 
 
@@ -8,6 +9,9 @@ def strip_think(text: str) -> str:
 
 class ClientBase:
     def query(self, user_prompt: str, system_prompt: str, verbose: bool) -> str: ...
+    async def async_query(
+        self, user_prompt: str, system_prompt: str, verbose: bool
+    ) -> str: ...
 
 
 class OllamaClient(ClientBase):
@@ -41,6 +45,34 @@ class OllamaClient(ClientBase):
 
         return output.strip() if verbose else strip_think(output).strip()
 
+    async def async_query(
+        self,
+        user_prompt: str,
+        system_prompt: str,
+        options: Dict = {},
+        verbose: bool = False,
+    ) -> str:
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            "options": options,
+            "stream": False,
+        }
+
+        timeout = httpx.Timeout(120.0)
+
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.post(self.url, json=payload)
+            response.raise_for_status()
+            data = response.json()
+
+        output = data.get("message", {}).get("content", "")
+
+        return output.strip() if verbose else strip_think(output).strip()
+
 
 class OpenAIClient(ClientBase):
     def __init__(
@@ -49,10 +81,11 @@ class OpenAIClient(ClientBase):
         url: str = "http://localhost:8000/v1",
         api_key: str = "not-needed",
     ):
-        from openai import OpenAI
+        from openai import OpenAI, AsyncOpenAI
 
         super().__init__()
         self.client = OpenAI(base_url=url, api_key=api_key)
+        self.async_client = AsyncOpenAI(base_url=url, api_key=api_key)
         self.model = model
 
     def query(
@@ -83,6 +116,27 @@ class OpenAIClient(ClientBase):
         else:
             return strip_think(output)
 
+    async def async_query(
+        self,
+        user_prompt: str,
+        system_prompt: str,
+        options: Dict = {},
+        verbose: bool = False,
+    ) -> str:
+        request_body = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            **options,
+        }
+
+        response = await self.client.chat.completions.create(**request_body)
+        output = response.choices[0].message.content
+
+        return output if verbose else strip_think(output)
+
 
 class Qwen3OllamaClient(OllamaClient):
     def __init__(
@@ -101,6 +155,25 @@ class Qwen3OllamaClient(OllamaClient):
         }
 
         return super().query(
+            user_prompt=user_prompt,
+            system_prompt=system_prompt,
+            options=options,
+            verbose=verbose,
+        )
+
+    async def async_query(
+        self, user_prompt: str, system_prompt: str, verbose: bool = False
+    ) -> str:
+        options = {
+            "temperature": 0.7,
+            "top_p": 0.8,
+            "top_k": 20,
+            "presence_penalty": 1.5,
+            "mirostat": 0,
+            "frequency_penalty": 0.0,
+        }
+
+        return await super().async_query(
             user_prompt=user_prompt,
             system_prompt=system_prompt,
             options=options,
@@ -136,6 +209,24 @@ class Qwen3OpenAiClient(OpenAIClient):
             verbose=verbose,
         )
 
+    async def async_query(
+        self, user_prompt: str, system_prompt: str, verbose: bool = False
+    ):
+        options = {
+            "temperature": 0.7,
+            "top_p": 0.8,
+            "top_k": 20,
+            "min_p": 0,
+            "presence_penalty": 1.5,
+        }
+
+        return await super().async_query(
+            user_prompt=user_prompt,
+            system_prompt=system_prompt,
+            options=options,
+            verbose=verbose,
+        )
+
 
 class GptOssClient(OpenAIClient):
     def __init__(
@@ -144,8 +235,6 @@ class GptOssClient(OpenAIClient):
         url: str = "http://localhost:8000/v1",
         api_key: str = "not-needed",
     ):
-        from openai import OpenAI
-
         super().__init__(model=model, url=url, api_key=api_key)
 
     def query(self, user_prompt: str, system_prompt: str, verbose: bool = False):
@@ -155,6 +244,21 @@ class GptOssClient(OpenAIClient):
         }
 
         return super().query(
+            user_prompt=user_prompt,
+            system_prompt=system_prompt,
+            options=options,
+            verbose=verbose,
+        )
+
+    async def async_query(
+        self, user_prompt: str, system_prompt: str, verbose: bool = False
+    ):
+        options = {
+            "temperature": 1.0,
+            "top_p": 1.0,
+        }
+
+        return await super().async_query(
             user_prompt=user_prompt,
             system_prompt=system_prompt,
             options=options,

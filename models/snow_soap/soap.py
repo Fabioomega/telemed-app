@@ -3,7 +3,7 @@ import re
 from client import ClientBase
 
 
-def generate_soap(client: ClientBase, texto: str) -> str:
+async def generate_soap(client: ClientBase, texto: str) -> str:
     """
     Gera uma nota SOAP a partir de um texto clínico em português.
     O prompt é em inglês (para melhor compreensão), mas a saída é em português.
@@ -45,7 +45,7 @@ Input text (in Portuguese):
 {texto}
 """
 
-    soap_text = client.query(prompt, "", False)
+    soap_text = await client.async_query(prompt, "", False)
     return normalize_soap_text(soap_text)
 
 

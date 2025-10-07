@@ -2,8 +2,25 @@ from client import ClientBase
 from typing import List, Tuple
 from dictionary import create_set_from_text, fix_sentence
 from common import Keywords, CUIInfo, Spans, PairedText, strip_cui
+import logging
 
-EXAMPLE = """Example:
+SYS_PROMPT = """You are a bilingual medical terminology alignment system.
+You will receive two reports: one in Portuguese (original) and one in English (translated).
+Your task is to correlate the given English medical terms or phrases to their exact equivalents in the Portuguese report.
+
+You will receive:
+- Original: {<original text in Portuguese>}
+- Translated: {<translated text in English>}
+- Target Words to Correlate: [<english phrase/term1>, <english phrase/term2>, <english phrase/term3>]
+
+Output Rules:
+1. Respond ONLY with the direct correspondences between the terms.
+2. Each line must follow the exact format:
+   <english term> - <portuguese term>
+3. Do NOT explain, comment, or add any text besides these pairs.
+4. If a term has no match, simply skip it (do NOT write "Explanation", "None", or "Not found").
+
+Example:
 - Original: {Raios X de Tórax
 
 Arcos costais aparentemente íntegros
@@ -12,6 +29,7 @@ Seios costofrênicos livres
 Mediastino sem alterações
 Área cardíaca normal
 Circulação pulmonar preservada}
+
 - Translated: {Chest X-Ray
 
 Rib arches apparently intact
@@ -20,41 +38,13 @@ Costophrenic angles clear
 Mediastinum without alterations
 Normal cardiac silhouette
 Pulmonary circulation preserved}
-- Target Words to Correlate: ["Raios X de Tórax", "Arcos costais", "Mediastino"]
 
-Answer:
+- Target Words to Correlate: ["Chest X-Ray", "Rib arches", "Mediastinum"]
+
+Correlated Terms:
 Chest X-Ray - Raios X de Tórax
 Rib arches - Arcos costais
-Mediastinum - Mediastino"""
-
-_SYS_PROMPT = """You're being given 2 reports, one of them is the original report in portuguese while the other is a translated version in english.
-Your job is to correlate important words, or phrases, from the english one to the portuguese one.
-The correlated words may contain a prelude or epilogue that is denoted between [].
-The prelude or epilogue should NOT appear in the answer; it's just there to help you correlate between sentences better.
-You will receive which words and phrases you should correlate.
-You'll receive the content as follows:
-- Original: {<original text goes here>}
-- Translated: {<translated text goes here>}
-- Target Words to Correlate: {[prelude]<english phrase/term1>[epilogue], <english phrase/term2>, [prologue]<english phrase/term3>}
-
-Correlated Terms:
-<english phrase/term> - <portuguese phrase/term>
-<english phrase/term2> - <portuguese phrase/term>
-<english phrase/term3> - <portuguese phrase/term>
-"""
-
-SYS_PROMPT = """You're being given 2 reports, one of them is the original report in portuguese while the other is a translated version in english.
-Your job is to correlate important words, or phrases, from the english one to the portuguese one.
-You will receive which words and phrases you should correlate. Do not add any commentary.
-You'll receive the content as follows:
-- Original: {<original text goes here>}
-- Translated: {<translated text goes here>}
-- Target Words to Correlate: {<english phrase/term1>, <english phrase/term2>, <english phrase/term3>}
-
-Correlated Terms:
-<english phrase/term> - <portuguese phrase/term>
-<english phrase/term2> - <portuguese phrase/term>
-<english phrase/term3> - <portuguese phrase/term>
+Mediastinum - Mediastino
 """
 
 
@@ -190,18 +180,28 @@ def format_desired_answer(text: str) -> List[PairedText]:
 
     seq = []
     for line in text.split("\n"):
+        line = line.strip()
         if not line or line.isspace():
             continue
 
         line = line[first_letter_index(line) :]
 
-        translated_phrase, original_phrase = line.split(" - ")
-        commentary_index = first_parenthesis_index(original_phrase)
+        try:
+            if " - " in line:
+                translated_phrase, original_phrase = line.split(" - ", 1)
+                commentary_index = first_parenthesis_index(original_phrase)
 
-        if commentary_index != -1:
-            original_phrase = original_phrase[: commentary_index + 1]
+                if commentary_index != -1:
+                    original_phrase = original_phrase[: commentary_index + 1]
 
-        seq.append(PairedText(original_phrase.strip(), translated_phrase.strip()))
+                seq.append(
+                    PairedText(original_phrase.strip(), translated_phrase.strip())
+                )
+            else:
+                print(f"[WARNING] Linha ignorada (formato inesperado): {line}")
+        except Exception as e:
+            logging.log(logging.ERROR, f"text: {text}")
+            raise e
 
     return seq
 
@@ -282,11 +282,10 @@ def match_keywords(
 
     target_words = str(strip_cui(keywords))[1:-1]
 
-    prompt = f"""- Original: {{{original_text}}}
+    prompt = f"""- Original: [{original_text}]
 - Translated: {{{translated_text}}}
-- Target Words to Correlate: {{{target_words}}}
 
-Correlated Terms:"""
+- Target Words to Correlate: {{{target_words}}}"""
 
     pairs = format_desired_answer(client.query(prompt, SYS_PROMPT, verbose=verbose))
 

@@ -59,6 +59,11 @@ def homepage(request: Request):
     return templates.TemplateResponse(request=request, name="radiology-demo.html")
 
 
+@app.get("/snow")
+def homepage(request: Request):
+    return templates.TemplateResponse(request=request, name="snomed-demo.html")
+
+
 @app.get("/status")
 def status():
     return {"status": "Service seems to be running!"}

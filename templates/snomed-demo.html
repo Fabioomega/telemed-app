@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>cTAKES Text Annotation Tool</title>
+    <link href="{{ url_for('static', path='styles/snomed-demo.css') }}" rel="stylesheet">
+</head>
+
+<body>
+    <div class="annotation-tooltip" id="tooltip"></div>
+    <div class="container">
+        <div class="panel">
+            <div class="panel-header">
+                <h1>Input Text</h1>
+                <div class="checkbox-container">
+                    <input type="checkbox" id="soapFormat" />
+                    <label for="soapFormat">Convert to SOAP Format</label>
+                </div>
+            </div>
+            <textarea id="inputText" placeholder="Enter your clinical narrative text here..."></textarea>
+            <div class="button-container">
+                <button onclick="processText()">Process Text</button>
+                <button class="secondary" onclick="clearText()">Clear</button>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <h1>Results</h1>
+            </div>
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('annotated')">Annotated Text</div>
+                <div class="tab" onclick="switchTab('entities')">Entities</div>
+            </div>
+            <div class="output-content">
+                <div id="annotatedTab" class="tab-content active">
+                    <div class="empty-state">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                            </path>
+                        </svg>
+                        <p>No annotations yet. Process text to see results.</p>
+                    </div>
+                </div>
+                <div id="entitiesTab" class="tab-content">
+                    <div class="empty-state">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z">
+                            </path>
+                        </svg>
+                        <p>No entities extracted yet. Process text to see results.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', path='scripts/snomed-demo.js') }}"></script>
+</body>
+
+</html>

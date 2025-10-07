@@ -5,7 +5,7 @@ from ctakes import index_texts
 from typing import List, Union
 
 
-def index_texts(
+async def process_texts(
     texts: Union[List[str], str],
     client: ClientBase,
     ulms_api_key: str,
@@ -27,14 +27,17 @@ def index_texts(
                     raise ValueError("The snomed was fucked!")
 
                 try:
-                    acc.append(
-                        match_keywords(
-                            client, texts[index], translations[index], keywords
-                        )
+                    matched_keywords = await match_keywords(
+                        client, texts[index], translations[index], keywords
                     )
+
+                    if not matched_keywords:
+                        i += 1
+                        continue
+
+                    acc.append(match_keywords)
                     break
                 except Exception as e:
-
                     print(f"Error happened: {e}")
                     print("Trying again!")
                     i += 1

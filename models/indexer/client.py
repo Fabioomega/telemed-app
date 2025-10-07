@@ -140,7 +140,7 @@ class OpenAIClient(ClientBase):
 
 class Qwen3OllamaClient(OllamaClient):
     def __init__(
-        self, url: str = "http://localhost:11434/api/chat", model: str = "llama3"
+        self, url: str = "http://localhost:11434/api/chat", model: str = "qwen3:8b"
     ):
         super().__init__(url=url, model=model)
 

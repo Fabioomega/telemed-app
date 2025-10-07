@@ -1,19 +1,25 @@
-from translator import translate
-from client import ClientBase
-from matcher import match_keywords
-from ctakes import index_texts
+from .translator import translate
+from .client import ClientBase
+from .matcher import match_keywords
+from .ctakes import index_texts
+from .soap import generate_soap
+from .common import Keywords
 from typing import List, Union
 
 
 async def process_texts(
-    texts: Union[List[str], str],
     client: ClientBase,
+    texts: Union[List[str], str],
     ulms_api_key: str,
     ctakes_path="apache-ctakes-6.0.0-bin",
+    use_soap: bool = False,
     do_it_right: bool = True,
-):
+) -> List[Keywords]:
     if isinstance(texts, str):
         texts = [texts]
+
+    if use_soap:
+        texts = [generate_soap(client, text) for text in texts]
 
     translations = [translate(client, text) for text in texts]
     acc = []
@@ -43,7 +49,9 @@ async def process_texts(
                     i += 1
         else:
             acc.append(
-                match_keywords(client, texts[index], translations[index], keywords)
+                await match_keywords(
+                    client, texts[index], translations[index], keywords
+                )
             )
 
     return acc

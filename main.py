@@ -13,13 +13,18 @@ from decode import base64_to_img
 from pydantic import BaseModel
 from typing import Dict, List
 from environment_loader import Environment
+from models.indexer.client import Qwen3OllamaClient
+from models.indexer import index_texts, Keywords
 
 
 class ModelInput(BaseModel):
     img: str
 
 
-env = Environment("env.json")
+class IndexInput(BaseModel):
+    text: str
+    use_soap: bool
+
 
 CUDA_DEVICES = None  # (0,)
 BATCH_SIZE = 2
@@ -38,6 +43,8 @@ modality_streamer = create_modality(CUDA_DEVICES, BATCH_SIZE, MAX_LATENCY, WORKE
 
 region_streamer = create_region(CUDA_DEVICES, BATCH_SIZE, MAX_LATENCY, WORKER_NUM)
 
+env = Environment("env.json")
+client = Qwen3OllamaClient()
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -97,3 +104,10 @@ def region(img: ModelInput) -> Dict[str, bool]:
     decoded_img = base64_to_img(img.img)
     output = region_streamer.predict([decoded_img])[0]
     return output
+
+
+@app.post("/index")
+async def index(inp: IndexInput) -> List[Keywords]:
+    return await index_texts(
+        client, inp.text, env.get("SNOWMED_API_KEY"), use_soap=inp.use_soap
+    )

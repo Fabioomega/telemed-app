@@ -37,7 +37,7 @@ class LLMOpenAI:
         user_template: Block,
         assistant_template: Block,
     ):
-        self.client = OAsyncClient(host=host)
+        self.client = OAsyncClient(base_url=host, api_key="ollama")
         self.prompt = prompt
         self.model = model
         self.image_token = image_token

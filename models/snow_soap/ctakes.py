@@ -144,7 +144,7 @@ def extract_keywords(filepath: Path) -> Keywords:
 
         keyword_list.append(
             CUIInfo(
-                row[" CUI "],
+                row[" CUI "].split(";"),
                 row[" Negated "],
                 row[" Uncertain "],
                 extract_spans(row[" Span "]),

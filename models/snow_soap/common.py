@@ -11,7 +11,7 @@ class Spans(NamedTuple):
 
 
 class CUIInfo(NamedTuple):
-    cui: CUI
+    cuis: List[CUI]
     negated: bool
     uncertain: bool
     spans: Spans
@@ -19,7 +19,7 @@ class CUIInfo(NamedTuple):
 
     def to_dict(self):
         return {
-            "cui": self.cui,
+            "cui": self.cuis,
             "negated": self.negated,
             "uncertain": self.uncertain,
             "spans": [{"start": self.spans.start, "end": self.spans.end}],

@@ -101,7 +101,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: body
+                body: body,
+                signal: AbortSignal.timeout(300000)
             });
 
             const data = await response.json();

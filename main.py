@@ -86,9 +86,10 @@ def diseases(img: ModelInput) -> Dict[str, bool]:
 @app.post("/ecg-descritores")
 def read_route(img: ModelInput) -> Dict[str, str | List[str]]:
     decoded_img = base64_to_img(img.img)
-    output: Dict[str, str | List[str]] = ecg_classifier_streamer.predict([decoded_img])[
-        0
-    ]
+    
+    from models.ecg.model_api import load_clip_model
+    direct_model = load_clip_model()
+    output: Dict[str, str | List[str]] = direct_model.predict([decoded_img], threshold=0.2)[0]
     return output
 
 

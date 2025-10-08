@@ -12,7 +12,7 @@ class ECGClassifier(ManagedModel):
         self.model = load_clip_model()
 
     def predict(self, batch: List[np.ndarray]) -> List[Dict[str, str | List[str]]]:
-        return self.model.predict(batch)
+        return self.model.predict(batch, threshold=0.5)
 
 
 @lru_cache(maxsize=1)

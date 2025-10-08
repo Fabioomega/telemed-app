@@ -108,35 +108,7 @@ body {
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-}
-
-.description-container {
-    margin-top: 1.5rem;
-}
-
-.description-label {
-    font-weight: 600;
-    color: #a0a0a0;
-    margin-bottom: 0.5rem;
-    font-size: 1.1rem;
-}
-
-.description-list {
-    list-style: none;
-}
-
-.description-item {
-    background-color: #333;
-    padding: 1rem 1.5rem;
-    border-radius: 8px;
-    margin-bottom: 0.8rem;
-    font-size: 1.1rem;
-    border-left: 4px solid #6e8efb;
-    transition: transform 0.2s ease;
-}
-
-.description-item:hover {
-    transform: translateX(5px);
+    line-height: 1.2;
 }
 
 .placeholder-text {

@@ -1,0 +1,11 @@
+{
+  "ADRV": 0,
+  "AEI (ZEI)": 1,
+  "AFCRD": 2,
+  "ARV": 3,
+  "Desvio Eixo - E": 4,
+  "NORMAL/DLN": 5,
+  "None": 6,
+  "SVE": 7,
+  "TS": 8
+}

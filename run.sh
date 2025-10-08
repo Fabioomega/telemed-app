@@ -14,4 +14,4 @@ echo "Installing dependencies"
 pip install -r requirements.txt
 
 echo "Running uvicorn"
-uvicorn main:app --host 0.0.0.0 --port 80 --reload
+uvicorn main:app --host 0.0.0.0 --port 80

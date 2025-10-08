@@ -103,6 +103,7 @@ class OpenAIClient(ClientBase):
         user_prompt: str,
         system_prompt: str,
         options: Dict = {},
+        format_obj: Optional[Dict] = None,
         verbose: bool = False,
     ):
         request_body = {
@@ -113,6 +114,9 @@ class OpenAIClient(ClientBase):
             ],
             **options,
         }
+
+        if format_obj is not None:
+            request_body["extra_body"] = {"guided_json": format_obj}
 
         raw_response = self.client._client.request(
             method="POST", url="/chat/completions", json=request_body
@@ -131,6 +135,7 @@ class OpenAIClient(ClientBase):
         user_prompt: str,
         system_prompt: str,
         options: Dict = {},
+        format_obj: Optional[Dict] = None,
         verbose: bool = False,
     ) -> str:
         request_body = {
@@ -141,6 +146,9 @@ class OpenAIClient(ClientBase):
             ],
             **options,
         }
+
+        if format_obj is not None:
+            request_body["extra_body"] = {"guided_json": format_obj}
 
         response = await self.client.chat.completions.create(**request_body)
         output = response.choices[0].message.content
@@ -222,6 +230,7 @@ class Qwen3OpenAiClient(OpenAIClient):
             user_prompt=user_prompt,
             system_prompt=system_prompt,
             options=options,
+            format_obj=use_options.get("format_obj"),
             verbose=verbose,
         )
 
@@ -240,6 +249,7 @@ class Qwen3OpenAiClient(OpenAIClient):
             user_prompt=user_prompt,
             system_prompt=system_prompt,
             options=options,
+            format_obj=use_options.get("format_obj"),
             verbose=verbose,
         )
 
@@ -265,6 +275,7 @@ class GptOssClient(OpenAIClient):
             user_prompt=user_prompt,
             system_prompt=system_prompt,
             options=options,
+            format_obj=use_options.get("format_obj"),
             verbose=verbose,
         )
 
@@ -280,5 +291,6 @@ class GptOssClient(OpenAIClient):
             user_prompt=user_prompt,
             system_prompt=system_prompt,
             options=options,
+            format_obj=use_options.get("format_obj"),
             verbose=verbose,
         )

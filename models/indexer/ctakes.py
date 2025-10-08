@@ -4,7 +4,7 @@ import asyncio
 import pandas as pd
 from typing import NamedTuple, Union, List, Dict
 from pathlib import Path
-from common import Keywords, CUIInfo, Spans
+from .common import Keywords, CUIInfo, Spans
 
 
 class cTakePaths(NamedTuple):

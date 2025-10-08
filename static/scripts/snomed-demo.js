@@ -12,9 +12,20 @@ function switchTab(tabName) {
     document.getElementById(tabName + 'Tab').classList.add('active');
 }
 
-function processText() {
+function toggleProcessButton() {
+    const button = document.getElementById('processButton');
+    if (button?.disabled == undefined || button.disabled) {
+        button.disabled = false;
+    } else {
+        button.disabled = true;
+    }
+    button.classList.toggle('disable');
+}
+
+async function processText() {
     const inputText = document.getElementById('inputText').value.trim();
-    const soapFormat = document.getElementById('soapFormat').checked;
+    const useSoap = document.getElementById('soapFormat').checked;
+    toggleProcessButton();
 
     if (!inputText) {
         alert('Please enter some text to process.');
@@ -23,206 +34,35 @@ function processText() {
 
     let textToProcess = inputText;
 
-    if (soapFormat) {
-        textToProcess = convertToSOAP(inputText);
-    }
-
-    const entities = extractEntities(textToProcess);
-    processedEntities = entities; // Store for tooltip access
-    displayAnnotatedText(textToProcess, entities);
+    const { text, medicalTerms } = await getSoapAndEntities(textToProcess, useSoap)
+    const entities = extractEntities(text, medicalTerms);
+    processedEntities = entities;
+    displayAnnotatedText(text, entities);
     displayEntities(entities);
+    toggleProcessButton();
 }
 
-function convertToSOAP(text) {
-    // Simple SOAP conversion simulation
-    const sections = {
-        subjective: [],
-        objective: [],
-        assessment: [],
-        plan: []
-    };
+async function getSoapAndEntities(text, useSoap) {
+    try {
+        const response = await fetch("/index", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: text, use_soap: useSoap })
+        });
 
-    const sentences = text.split(/[.!?]+/).filter(s => s.trim());
-
-    sentences.forEach(sentence => {
-        const lower = sentence.toLowerCase();
-        if (lower.includes('complain') || lower.includes('feel') || lower.includes('pain') || lower.includes('patient report')) {
-            sections.subjective.push(sentence.trim());
-        } else if (lower.includes('exam') || lower.includes('vital') || lower.includes('temperature') || lower.includes('pressure')) {
-            sections.objective.push(sentence.trim());
-        } else if (lower.includes('diagnos') || lower.includes('condition') || lower.includes('indicate')) {
-            sections.assessment.push(sentence.trim());
-        } else {
-            sections.plan.push(sentence.trim());
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
-    });
 
-    return `SUBJECTIVE:\n${sections.subjective.join('. ') || 'None documented'}.\n\nOBJECTIVE:\n${sections.objective.join('. ') || 'None documented'}.\n\nASSESSMENT:\n${sections.assessment.join('. ') || 'None documented'}.\n\nPLAN:\n${sections.plan.join('. ') || 'None documented'}.`;
+        return await response.json();
+    } catch (error) {
+        console.error("Failed to extract entities:", error);
+        return { 'text': "", 'medicalTerms': [] };
+    }
 }
 
-function extractEntities(text) {
-    // Simulated cTAKES entity extraction with CUIs and properties
+function extractEntities(text, medicalTerms) {
     const entities = [];
-
-    const medicalTerms = {
-
-        'pain': {
-            type: 'Symptom',
-            cuis: ['C0030193'],
-            negation: false,
-            uncertainty: false
-        },
-        'fever': {
-            type: 'Symptom',
-            cuis: ['C0015967', 'C0239938'],
-            negation: false,
-            uncertainty: false
-        },
-        'headache': {
-            type: 'Symptom',
-            cuis: ['C0018681'],
-            negation: false,
-            uncertainty: false
-        },
-        'nausea': {
-            type: 'Symptom',
-            cuis: ['C0027497'],
-            negation: false,
-            uncertainty: false
-        },
-        'cough': {
-            type: 'Symptom',
-            cuis: ['C0010200'],
-            negation: false,
-            uncertainty: false
-        },
-        'fatigue': {
-            type: 'Symptom',
-            cuis: ['C0015672'],
-            negation: false,
-            uncertainty: false
-        },
-        'diabetes': {
-            type: 'Disease',
-            cuis: ['C0011849', 'C0011854'],
-            negation: false,
-            uncertainty: false
-        },
-        'hypertension': {
-            type: 'Disease',
-            cuis: ['C0020538'],
-            negation: false,
-            uncertainty: false
-        },
-        'pneumonia': {
-            type: 'Disease',
-            cuis: ['C0032285'],
-            negation: false,
-            uncertainty: false
-        },
-        'influenza': {
-            type: 'Disease',
-            cuis: ['C0021400'],
-            negation: false,
-            uncertainty: false
-        },
-        'covid': {
-            type: 'Disease',
-            cuis: ['C5203670'],
-            negation: false,
-            uncertainty: false
-        },
-        'aspirin': {
-            type: 'Medication',
-            cuis: ['C0004057'],
-            negation: false,
-            uncertainty: false
-        },
-        'ibuprofen': {
-            type: 'Medication',
-            cuis: ['C0020740'],
-            negation: false,
-            uncertainty: false
-        },
-        'acetaminophen': {
-            type: 'Medication',
-            cuis: ['C0000970'],
-            negation: false,
-            uncertainty: false
-        },
-        'metformin': {
-            type: 'Medication',
-            cuis: ['C0025598'],
-            negation: false,
-            uncertainty: false
-        },
-        'amoxicillin': {
-            type: 'Medication',
-            cuis: ['C0002645'],
-            negation: false,
-            uncertainty: false
-        },
-        'blood pressure': {
-            type: 'Vital Sign',
-            cuis: ['C0005823'],
-            negation: false,
-            uncertainty: false
-        },
-        'temperature': {
-            type: 'Vital Sign',
-            cuis: ['C0005903'],
-            negation: false,
-            uncertainty: false
-        },
-        'heart rate': {
-            type: 'Vital Sign',
-            cuis: ['C0018810'],
-            negation: false,
-            uncertainty: false
-        },
-        'respiratory rate': {
-            type: 'Vital Sign',
-            cuis: ['C0231832'],
-            negation: false,
-            uncertainty: false
-        },
-        'pressure': {
-            type: 'Vital Sign',
-            cuis: ['C0039606', 'C0011595'],
-            negation: false,
-            uncertainty: false
-        },
-        'examination': {
-            type: 'Procedure',
-            cuis: ['C0031809'],
-            negation: false,
-            uncertainty: false
-        },
-        'x-ray': {
-            type: 'Procedure',
-            cuis: ['C0034571'],
-            negation: false,
-            uncertainty: false
-        },
-        'ct scan': {
-            type: 'Procedure',
-            cuis: ['C0040405'],
-            negation: false,
-            uncertainty: false
-        },
-        'blood test': {
-            type: 'Procedure',
-            cuis: ['C0018941'],
-            negation: false,
-            uncertainty: false
-        },
-        'mri': {
-            type: 'Procedure',
-            cuis: ['C0024485'],
-            negation: false,
-            uncertainty: false
-        }
-    };
 
     // Check for negation and uncertainty context
     Object.keys(medicalTerms).forEach(term => {
@@ -231,10 +71,7 @@ function extractEntities(text) {
         while ((match = regex.exec(text)) !== null) {
             entities.push({
                 text: match[0],
-                type: medicalTerms[term.toLowerCase()].type,
-                cuis: medicalTerms[term.toLowerCase()].cuis,
-                negation: medicalTerms[term.toLowerCase()].negation,
-                uncertainty: medicalTerms[term.toLowerCase()].uncertainty,
+                meanings: medicalTerms[term.toLowerCase()],
                 start: match.index,
                 end: match.index + match[0].length
             });
@@ -244,7 +81,46 @@ function extractEntities(text) {
     return entities.sort((a, b) => a.start - b.start);
 }
 
+function resolveOverlaps(entities) {
+    // Sort by start position, then by length (longer first)
+    const sorted = entities.slice().sort((a, b) => {
+        if (a.start !== b.start) return a.start - b.start;
+        return (b.end - b.start) - (a.end - a.start);
+    });
+
+    const resolved = [];
+
+    for (let i = 0; i < sorted.length; i++) {
+        const current = sorted[i];
+        let hasOverlap = false;
+
+        // Check if current entity overlaps with any already resolved entity
+        for (let j = 0; j < resolved.length; j++) {
+            const existing = resolved[j];
+
+            // Check for overlap
+            if (!(current.end <= existing.start || current.start >= existing.end)) {
+                hasOverlap = true;
+
+                // Keep the longer entity (more specific)
+                if ((current.end - current.start) > (existing.end - existing.start)) {
+                    resolved[j] = current;
+                }
+                break;
+            }
+        }
+
+        if (!hasOverlap) {
+            resolved.push(current);
+        }
+    }
+
+    // Sort back by start position
+    return resolved.sort((a, b) => a.start - b.start);
+}
+
 function displayAnnotatedText(text, entities) {
+    console.log(entities);
     const annotatedTab = document.getElementById('annotatedTab');
 
     if (entities.length === 0) {
@@ -252,21 +128,37 @@ function displayAnnotatedText(text, entities) {
         return;
     }
 
+    // Resolve overlapping entities
+    const resolvedEntities = resolveOverlaps(entities);
+
+
     let html = '';
     let lastIndex = 0;
 
-    entities.forEach((entity, index) => {
+    resolvedEntities.forEach((entity, index) => {
         html += text.substring(lastIndex, entity.start);
 
+        // Check if ambiguous (multiple meanings)
+        const isAmbiguous = entity.meanings.length > 1;
+        const typeLabel = isAmbiguous
+            ? entity.meanings.map(m => m.semanticGroup).join('/')
+            : entity.meanings[0].semanticGroup;
+        const typeClass = isAmbiguous ? 'annotation-type ambiguous' : 'annotation-type';
+
         let badges = '';
-        if (entity.negation) {
-            badges += '<span class="property-badge negated">NEG</span>';
-        }
-        if (entity.uncertainty) {
-            badges += '<span class="property-badge uncertain">UNC</span>';
+        if (!isAmbiguous) {
+            if (entity.meanings[0].negated) {
+                badges += '<span class="property-badge negated">NEG</span>';
+            }
+            if (entity.meanings[0].uncertain) {
+                badges += '<span class="property-badge uncertain">UNC</span>';
+            }
         }
 
-        html += `<span class="annotation" data-entity-index="${index}" onmouseenter="showTooltip(event, ${index})" onmouseleave="hideTooltip()">${entity.text}<span class="annotation-type">${entity.type}</span>${badges}</span>`;
+        // Find original index for tooltip
+        const originalIndex = entities.indexOf(entity);
+
+        html += `<span class="annotation" data-entity-index="${originalIndex}" onmouseenter="showTooltip(event, ${originalIndex})" onmouseleave="hideTooltip()">${entity.text}<span class="${typeClass}">${typeLabel}</span>${badges}</span>`;
         lastIndex = entity.end;
     });
 
@@ -280,28 +172,74 @@ function showTooltip(event, entityIndex) {
     const entity = processedEntities[entityIndex];
     const tooltip = document.getElementById('tooltip');
 
-    let cuisHtml = entity.cuis.map(cui => `<span class="cui-badge">${cui}</span>`).join('');
+    let tooltipContent = `<div class="tooltip-header">${entity.text}</div>`;
 
-    tooltip.innerHTML = `
-                <div class="tooltip-header">${entity.text}</div>
-                <div class="tooltip-row">
-                    <span class="tooltip-label">Semantic Type:</span>
-                    <span class="tooltip-value">${entity.type}</span>
-                </div>
-                <div class="tooltip-row">
-                    <span class="tooltip-label">CUI(s):</span>
-                </div>
-                <div class="cui-list">${cuisHtml}</div>
-                <div class="tooltip-row">
-                    <span class="tooltip-label">Negated:</span>
-                    <span class="tooltip-value">${entity.negation ? 'Yes' : 'No'}</span>
-                </div>
-                <div class="tooltip-row">
-                    <span class="tooltip-label">Uncertain:</span>
-                    <span class="tooltip-value">${entity.uncertainty ? 'Yes' : 'No'}</span>
-                </div>
-            `;
+    // Show all meanings for ambiguous terms
+    if (entity.meanings.length > 1) {
+        tooltipContent += `<div style="color: #ec4899; font-size: 11px; margin: 4px 0;">⚠ Ambiguous Term - Multiple Meanings Detected</div>`;
+    }
 
+    entity.meanings.forEach((meaning, idx) => {
+        if (entity.meanings.length > 1) {
+            tooltipContent += `<div class="meaning-section">
+                        <div class="meaning-header">Meaning ${idx + 1}: ${meaning.semanticGroup}</div>
+                        `;
+        } else {
+            tooltipContent += `<div class="tooltip-row">
+                        <span class="tooltip-label">Semantic Type:</span>
+                        <span class="tooltip-value">${meaning.semanticGroup}</span>
+                    </div>`;
+        }
+
+        let cuisHtml = meaning.cui.map(_cui => `<span class="cui-badge">${_cui}</span>`).join('');
+
+        if (entity.meanings.length > 1) {
+            tooltipContent += `<div class="tooltip-row">
+                        <span class="tooltip-label">CUI(s):</span>
+                    </div>
+                    <div class="cui-list">${cuisHtml}</div>
+
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Negated:</span>
+                        <span class="tooltip-value">${meaning.negated ? 'Yes' : 'No'}</span>
+                    </div>
+
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Uncertain:</span>
+                        <span class="tooltip-value">${meaning.uncertain ? 'Yes' : 'No'}</span>
+                    </div>
+                    </div>
+                    `;
+        } else {
+            tooltipContent += `<div class="tooltip-row">
+                        <span class="tooltip-label">CUI(s):</span>
+                    </div>
+                    <div class="cui-list">${cuisHtml}</div>
+
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Negated:</span>
+                        <span class="tooltip-value">${meaning.negated ? 'Yes' : 'No'}</span>
+                    </div>
+
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Uncertain:</span>
+                        <span class="tooltip-value">${meaning.uncertain ? 'Yes' : 'No'}</span>
+                    </div>`
+        }
+    });
+
+    // tooltipContent += `
+    //             <div class="tooltip-row">
+    //                 <span class="tooltip-label">Negated:</span>
+    //                 <span class="tooltip-value">${entity.negation ? 'Yes' : 'No'}</span>
+    //             </div>
+    //             <div class="tooltip-row">
+    //                 <span class="tooltip-label">Uncertain:</span>
+    //                 <span class="tooltip-value">${entity.uncertain ? 'Yes' : 'No'}</span>
+    //             </div>
+    //         `;
+
+    tooltip.innerHTML = tooltipContent;
     tooltip.style.display = 'block';
     tooltip.style.left = event.pageX + 10 + 'px';
     tooltip.style.top = event.pageY + 10 + 'px';
@@ -325,49 +263,47 @@ function displayEntities(entities) {
         return;
     }
 
-    const grouped = {};
-    entities.forEach(entity => {
-        if (!grouped[entity.type]) {
-            grouped[entity.type] = [];
-        }
-        grouped[entity.type].push(entity);
-    });
-
     let html = '';
-    Object.keys(grouped).forEach(type => {
-        html += `<div class="soap-section">
-                    <h3>${type} (${grouped[type].length})</h3>`;
 
-        grouped[type].forEach(entity => {
-            const cuisDisplay = entity.cuis.map(cui => `<span class="cui-badge">${cui}</span>`).join('');
+    entities.forEach((entity, idx) => {
+        entity.meanings.forEach((meaning, meaningIdx) => {
+            console.log(entity.text);
+            console.log(meaning);
+            const cuisDisplay = meaning.cui.map(_cui => `<span class="cui-badge">${_cui}</span>`).join('');
             let badges = '';
-            if (entity.negation) {
+
+            if (entity.meanings.length > 1) {
+                badges += '<span class="property-badge" style="background: rgba(236, 72, 153, 0.3); color: #f9a8d4; border: 1px solid rgba(236, 72, 153, 0.5);">AMBIGUOUS</span>';
+            }
+            if (meaning.negated) {
                 badges += '<span class="property-badge negated">NEGATED</span>';
             }
-            if (entity.uncertainty) {
+            if (meaning.uncertain) {
                 badges += '<span class="property-badge uncertain">UNCERTAIN</span>';
             }
 
             html += `
                         <div class="entity-item">
                             <div class="entity-header">
-                                <span class="entity-text">${entity.text}</span>
-                                <span class="entity-type-badge">${entity.type}</span>
+                                <span class="entity-text">${entity.text}${entity.meanings.length > 1 ? ` (Meaning ${meaningIdx + 1})` : ''}</span>
+                                <span class="entity-type-badge">${meaning.semanticGroup}</span>
                             </div>
                             <div class="entity-details">
                                 <span class="label">CUI(s):</span>
                                 <div class="cui-list">${cuisDisplay}</div>
                                 <span class="label">Negation:</span>
-                                <span class="value">${entity.negation ? 'Yes' : 'No'}</span>
+                                <span class="value">${meaning.negated ? 'Yes' : 'No'}</span>
                                 <span class="label">Uncertainty:</span>
-                                <span class="value">${entity.uncertainty ? 'Yes' : 'No'}</span>
+                                <span class="value">${meaning.uncertain ? 'Yes' : 'No'}</span>
+                                ${entity.meanings.length > 1 ? `
+                                <span class="label">Status:</span>
+                                <span class="value">Ambiguous (${entity.meanings.length} possible meanings)</span>
+                                ` : ''}
                             </div>
                             ${badges ? `<div style="margin-top: 8px;">${badges}</div>` : ''}
                         </div>
                     `;
         });
-
-        html += '</div>';
     });
 
     entitiesTab.innerHTML = html;

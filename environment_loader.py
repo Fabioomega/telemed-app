@@ -78,7 +78,11 @@ class Environment:
         return new_env
 
     def get(
-        self, name: str, default=None, transform: Callable[[Any], Any] = lambda x: x
+        self,
+        name: str,
+        default=None,
+        transform: Callable[[Any], Any] = lambda x: x,
+        require: bool = True,
     ):
         """
         Retrieve a value from the environment with optional transformation.
@@ -91,7 +95,11 @@ class Environment:
         Returns:
             The retrieved and transformed value.
         """
-        return transform(self.env.get(name, default))
+        if value := self.env.get(name, default):
+            return transform(value)
+
+        if require:
+            raise ValueError(f"The env does not contain the key: {name}")
 
     def __getitem__(self, item):
         return self.env[item]

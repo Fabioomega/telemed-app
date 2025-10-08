@@ -1,7 +1,7 @@
 torch~=2.5
 torchvision~=0.21
-fastapi[all]~=0.115
-uvicorn~=0.34.0
+fastapi[all]~=0.118
+uvicorn~=0.37.0
 service_streamer
 opencv-python
 tensorflow

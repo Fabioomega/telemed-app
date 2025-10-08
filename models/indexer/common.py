@@ -31,13 +31,34 @@ Keywords = Dict[EXPRESSION, List[CUIInfo]]
 
 
 def strip_cui(keywords: Keywords) -> List[str]:
-    return list(keywords.keys())
+    return list(set(keywords.keys()))
 
 
 def keywords_to_beauty(keywords: Keywords) -> Dict:
     new_dict = {}
     for key, cuis in keywords.items():
         new_dict[key] = [cui.to_dict() for cui in cuis]
+
+    return new_dict
+
+
+def removed_duplicates(keywords: Keywords) -> Dict:
+    new_dict = {}
+    for key, cuis in keywords.items():
+        all_semantic_groups = {}
+        for cui in cuis:
+            all_semantic_groups[cui.semantic_group] = 0
+
+        filtered_cuis = []
+        for cui in cuis:
+            sg = cui.semantic_group
+            if all_semantic_groups[sg] == 0:
+                all_semantic_groups[sg] = 1
+                filtered_cuis.append(cui)
+
+            continue
+
+        new_dict[key] = filtered_cuis
 
     return new_dict
 

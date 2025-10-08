@@ -1,6 +1,6 @@
 import requests
 import httpx
-from typing import Dict
+from typing import Dict, Optional
 
 
 def strip_think(text: str) -> str:
@@ -8,9 +8,11 @@ def strip_think(text: str) -> str:
 
 
 class ClientBase:
-    def query(self, user_prompt: str, system_prompt: str, verbose: bool) -> str: ...
+    def query(
+        self, user_prompt: str, system_prompt: str, verbose: bool, **use_options
+    ) -> str: ...
     async def async_query(
-        self, user_prompt: str, system_prompt: str, verbose: bool
+        self, user_prompt: str, system_prompt: str, verbose: bool, **use_options
     ) -> str: ...
 
 
@@ -25,6 +27,7 @@ class OllamaClient(ClientBase):
         user_prompt: str,
         system_prompt: str,
         options: Dict = {},
+        format_obj: Optional[Dict] = None,
         verbose: bool = False,
     ) -> str:
         payload = {
@@ -36,6 +39,9 @@ class OllamaClient(ClientBase):
             "options": options,
             "stream": False,
         }
+
+        if format_obj is not None:
+            payload["format"] = {"type": "object", **format_obj}
 
         response = requests.post(self.url, json=payload)
         response.raise_for_status()
@@ -50,6 +56,7 @@ class OllamaClient(ClientBase):
         user_prompt: str,
         system_prompt: str,
         options: Dict = {},
+        format_obj: Optional[Dict] = None,
         verbose: bool = False,
     ) -> str:
         payload = {
@@ -61,6 +68,9 @@ class OllamaClient(ClientBase):
             "options": options,
             "stream": False,
         }
+
+        if format_obj is not None:
+            payload["format"] = {"type": "object", **format_obj}
 
         timeout = httpx.Timeout(120.0)
 
@@ -144,9 +154,11 @@ class Qwen3OllamaClient(OllamaClient):
     ):
         super().__init__(url=url, model=model)
 
-    def query(self, user_prompt: str, system_prompt: str, verbose: bool = False) -> str:
+    def query(
+        self, user_prompt: str, system_prompt: str, verbose: bool = False, **use_options
+    ) -> str:
         options = {
-            "temperature": 0.7,
+            "temperature": use_options.get("temperature", 0.7),
             "top_p": 0.8,
             "top_k": 20,
             "presence_penalty": 1.5,
@@ -158,14 +170,15 @@ class Qwen3OllamaClient(OllamaClient):
             user_prompt=user_prompt,
             system_prompt=system_prompt,
             options=options,
+            format_obj=use_options.get("format_obj"),
             verbose=verbose,
         )
 
     async def async_query(
-        self, user_prompt: str, system_prompt: str, verbose: bool = False
+        self, user_prompt: str, system_prompt: str, verbose: bool = False, **use_options
     ) -> str:
         options = {
-            "temperature": 0.7,
+            "temperature": use_options.get("temperature", 0.7),
             "top_p": 0.8,
             "top_k": 20,
             "presence_penalty": 1.5,
@@ -177,6 +190,7 @@ class Qwen3OllamaClient(OllamaClient):
             user_prompt=user_prompt,
             system_prompt=system_prompt,
             options=options,
+            format_obj=use_options.get("format_obj"),
             verbose=verbose,
         )
 
@@ -193,9 +207,11 @@ class Qwen3OpenAiClient(OpenAIClient):
 
         super().__init__(model=model, url=url, api_key=api_key)
 
-    def query(self, user_prompt: str, system_prompt: str, verbose: bool = False):
+    def query(
+        self, user_prompt: str, system_prompt: str, verbose: bool = False, **use_options
+    ):
         options = {
-            "temperature": 0.7,
+            "temperature": use_options.get("temperature", 0.7),
             "top_p": 0.8,
             "top_k": 20,
             "min_p": 0,
@@ -210,10 +226,10 @@ class Qwen3OpenAiClient(OpenAIClient):
         )
 
     async def async_query(
-        self, user_prompt: str, system_prompt: str, verbose: bool = False
+        self, user_prompt: str, system_prompt: str, verbose: bool = False, **use_options
     ):
         options = {
-            "temperature": 0.7,
+            "temperature": use_options.get("temperature", 0.7),
             "top_p": 0.8,
             "top_k": 20,
             "min_p": 0,
@@ -237,9 +253,11 @@ class GptOssClient(OpenAIClient):
     ):
         super().__init__(model=model, url=url, api_key=api_key)
 
-    def query(self, user_prompt: str, system_prompt: str, verbose: bool = False):
+    def query(
+        self, user_prompt: str, system_prompt: str, verbose: bool = False, **use_options
+    ):
         options = {
-            "temperature": 1.0,
+            "temperature": user_prompt.get("temperature", 1.0),
             "top_p": 1.0,
         }
 
@@ -251,10 +269,10 @@ class GptOssClient(OpenAIClient):
         )
 
     async def async_query(
-        self, user_prompt: str, system_prompt: str, verbose: bool = False
+        self, user_prompt: str, system_prompt: str, verbose: bool = False, **use_options
     ):
         options = {
-            "temperature": 1.0,
+            "temperature": user_prompt.get("temperature", 1.0),
             "top_p": 1.0,
         }
 

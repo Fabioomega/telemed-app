@@ -107,7 +107,9 @@ def region(img: ModelInput) -> Dict[str, bool]:
 
 
 @app.post("/index")
-async def index(inp: IndexInput) -> List[Keywords]:
-    return await index_texts(
+async def index(inp: IndexInput):
+    indexed = await index_texts(
         client, inp.text, env.get("SNOMED_API_KEY"), use_soap=inp.use_soap
     )
+
+    return {"text": indexed["texts"][0], "medicalTerms": indexed["medicalTerms"][0]}

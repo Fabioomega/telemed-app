@@ -1,7 +1,6 @@
-import re
 from typing import List
-from common import Keywords
 from rapidfuzz import fuzz, process, utils
+from .common import Keywords
 
 
 def create_set_from_text(text: str) -> List[str]:

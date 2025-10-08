@@ -1,166 +1,56 @@
-from client import ClientBase
-from typing import List, Tuple
-from dictionary import create_set_from_text, fix_sentence
-from common import Keywords, CUIInfo, Spans, PairedText, strip_cui
-import logging
+from .client import ClientBase
+from .dictionary import create_set_from_text, fix_sentence
+from .common import Keywords, CUIInfo, Spans, PairedText, strip_cui
+from typing import List, Tuple, Dict
+import json
 
-SYS_PROMPT = """You are a bilingual medical terminology alignment system.
-You will receive two reports: one in Portuguese (original) and one in English (translated).
-Your task is to correlate the given English medical terms or phrases to their exact equivalents in the Portuguese report.
-
-You will receive:
-- Original: {<original text in Portuguese>}
-- Translated: {<translated text in English>}
-- Target Words to Correlate: [<english phrase/term1>, <english phrase/term2>, <english phrase/term3>]
+SYS_PROMPT = """You're being given 2 reports, one of them is the original report in portuguese while the other is a translated version in english.
+Your job is to correlate important words, or phrases, from the english one to the portuguese one.
+You will receive which words and phrases you should correlate.
+Your output is a json with each term and their match.
 
 Output Rules:
 1. Respond ONLY with the direct correspondences between the terms.
-2. Each line must follow the exact format:
-   <english term> - <portuguese term>
-3. Do NOT explain, comment, or add any text besides these pairs.
-4. If a term has no match, simply skip it (do NOT write "Explanation", "None", or "Not found").
+2. Do NOT explain, comment, or add any text besides these pairs.
+3. If a term has no match, simply skip it (do NOT write "Explanation", "None", or "Not found").
 
-Example:
-- Original: {Raios X de Tórax
+You'll receive the content as follows:
+- Original: {<original text goes here>}
+- Translated: {<translated text goes here>}
+- Target Words to Correlate: [<english phrase/term1>, <english phrase/term2>, <english phrase/term3>]
 
-Arcos costais aparentemente íntegros
-Ausência de condensações alveolares
-Seios costofrênicos livres
-Mediastino sem alterações
-Área cardíaca normal
-Circulação pulmonar preservada}
-
-- Translated: {Chest X-Ray
-
-Rib arches apparently intact
-No alveolar consolidations
-Costophrenic angles clear
-Mediastinum without alterations
-Normal cardiac silhouette
-Pulmonary circulation preserved}
-
-- Target Words to Correlate: ["Chest X-Ray", "Rib arches", "Mediastinum"]
-
-Correlated Terms:
-Chest X-Ray - Raios X de Tórax
-Rib arches - Arcos costais
-Mediastinum - Mediastino
+JSON Correlated Terms:
+{
+    "<english phrase/term>": "<portuguese phrase/term>",
+    "<english phrase/term2>": "<portuguese phrase/term2>"
+    "<english phrase/term3>": "<portuguese phrase/term3>"
+}
 """
 
 
-# def unravel_position(words: List[List[str]], position: int) -> Tuple[int, int]:
-#     for outer, sentence in enumerate(words):
-#         for inner, word in enumerate(sentence[:-1]):
-#             if position < len(word):
-#                 return (outer, inner)
-#             position -= len(word)
-#             position -= 1  # Spaces or Tabs
+def create_json_skeleton(keywords: List[str]) -> Dict:
+    generic_obj = {"type": "string"}
 
-#         if position < len(sentence[-1]):
-#             return (outer, inner)
+    json_skeleton = {}
 
-#         position -= len(word)
-#         position -= 1  # Newlines
-#     raise ValueError(
-#         "The unraveling was not possible because the position references data outside words!"
-#     )
+    for keyword in keywords:
+        json_skeleton[keyword] = generic_obj
 
-
-# def strip_cui_and_format_old(keywords: Keywords, translated_text: str) -> List[str]:
-#     words = [line.split() for line in translated_text.split("\n")]
-#     seq = [None for _ in range(len(keywords))]
-
-#     for i, (expression, cuis) in enumerate(keywords.items()):
-#         for cui in cuis:
-#             start, end = (
-#                 unravel_position(words, cui.spans.start),
-#                 unravel_position(words, cui.spans.end - 1),
-#             )
-
-#             prelude = ""
-#             if start[1] != 0:
-#                 prelude = f"[{words[start[0]][start[1] - 1]} ]"
-
-#             epilogue = ""
-#             if end[1] != len(words[end[0]]) - 1:
-#                 epilogue = f"[ {words[end[0]][end[1] - 1]}]"
-
-#             seq[i] = f"{prelude}{expression}{epilogue}"
-
-#     return seq
-
-
-# def rfind_word(text: str) -> int:
-#     if not text:
-#         return -1
-
-#     i = len(text) - 1
-
-#     # Skip trailing spaces and newlines
-#     while i >= 0 and text[i] in {" ", "\n"}:
-#         i -= 1
-
-#     if i < 0:
-#         return -1
-
-#     # Find the start of the word
-#     while i >= 0 and text[i] not in {" ", "\n"}:
-#         i -= 1
-
-#     start = i + 1
-
-#     return start
-
-
-# def find_word(text: str) -> int:
-#     if not text:
-#         return -1
-
-#     i = 0
-
-#     # Skip trailing spaces and newlines
-#     while i >= 0 and text[i] in {" ", "\n"}:
-#         i -= 1
-
-#     if i < 0:
-#         return -1
-
-#     # Find the start of the word
-#     while i >= 0 and text[i] not in {" ", "\n"}:
-#         i -= 1
-
-#     start = i + 1
-
-#     return start
-
-
-# def strip_cui_and_format(keywords: Keywords, translated_text: str) -> List[str]:
-#     seq = [None for _ in range(len(keywords))]
-
-#     for i, (expression, cuis) in enumerate(keywords.items()):
-#         cui = cuis[0]
-#         start, end = cui.spans.start, cui.spans.end
-
-#         prelude_index = rfind_word(translated_text[:start])
-#         epilogue_index = find_word(translated_text[end:])
-
-#         prelude = ""
-#         if prelude_index != -1:
-#             prelude = f"[{translated_text[prelude_index:start]}]"
-
-#         epilogue = ""
-#         if epilogue_index != -1:
-#             epilogue = f"[{translated_text[end:epilogue_index]}]"
-
-#         seq[i] = f"{prelude}{expression}{epilogue}"
-
-#     return seq
+    json_skeleton["required"] = keywords
+    return json_skeleton
 
 
 def first_letter_index(s: str):
     for i, char in enumerate(s):
         if char.isalpha():
             return i
+    return -1
+
+
+def last_letter_index(s: str):
+    for i, char in enumerate(reversed(s)):
+        if char.isalpha():
+            return len(s) - i - 1
     return -1
 
 
@@ -171,37 +61,27 @@ def first_parenthesis_index(s: str):
     return -1
 
 
-def format_desired_answer(text: str) -> List[PairedText]:
-    header = "correlated terms:"
+def filter_garbage(s: str) -> str:
+    commentary_start = first_parenthesis_index(s)
+    if commentary_start != -1:
+        s = s[: commentary_start + 1]
 
-    pos = text.lower().find(header)
-    if pos != -1:
-        text = text[pos + len(header) :]
+    start = first_letter_index(s)
+    last = last_letter_index(s)
+
+    return s[start : last + 1]
+
+
+def format_json_into_desired_answer(text: str) -> List[PairedText]:
+    obj = json.loads(text)
 
     seq = []
-    for line in text.split("\n"):
-        line = line.strip()
-        if not line or line.isspace():
-            continue
+    for translated_phrase, original_phrase in obj.items():
 
-        line = line[first_letter_index(line) :]
+        translated_phrase = filter_garbage(translated_phrase)
+        original_phrase = filter_garbage(original_phrase)
 
-        try:
-            if " - " in line:
-                translated_phrase, original_phrase = line.split(" - ", 1)
-                commentary_index = first_parenthesis_index(original_phrase)
-
-                if commentary_index != -1:
-                    original_phrase = original_phrase[: commentary_index + 1]
-
-                seq.append(
-                    PairedText(original_phrase.strip(), translated_phrase.strip())
-                )
-            else:
-                print(f"[WARNING] Linha ignorada (formato inesperado): {line}")
-        except Exception as e:
-            logging.log(logging.ERROR, f"text: {text}")
-            raise e
+        seq.append(PairedText(original_phrase.strip(), translated_phrase.strip()))
 
     return seq
 
@@ -218,7 +98,6 @@ def spell_check_pairs(
         original, match = pair.original, pair.match
 
         original = fix_sentence(original, original_words_set)
-        match = fix_sentence(match, str_keywords, match_whole=True)
 
         new_pairs[i] = PairedText(original, match)
 
@@ -279,16 +158,26 @@ async def match_keywords(
     keywords: List[Keywords],
     verbose: bool = False,
 ) -> Keywords:
+    just_keywords = strip_cui(keywords)
 
-    target_words = str(strip_cui(keywords))[1:-1]
+    target_words = str(just_keywords)[1:-1]
 
     prompt = f"""- Original: [{original_text}]
+
 - Translated: {{{translated_text}}}
 
-- Target Words to Correlate: {{{target_words}}}"""
+- Target Words to Correlate: {{{target_words}}}
 
-    pairs = format_desired_answer(
-        await client.async_query(prompt, SYS_PROMPT, verbose=verbose)
+JSON Correlated Terms:"""
+
+    pairs = format_json_into_desired_answer(
+        await client.async_query(
+            prompt,
+            SYS_PROMPT,
+            verbose=verbose,
+            format_obj=create_json_skeleton(just_keywords),
+            temperature=0.1,
+        )
     )
 
     pairs = spell_check_pairs(original_text, keywords, pairs)

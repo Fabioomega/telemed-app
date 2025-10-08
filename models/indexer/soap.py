@@ -1,6 +1,5 @@
-import requests
 import re
-from client import ClientBase
+from .client import ClientBase
 
 
 async def generate_soap(client: ClientBase, texto: str) -> str:

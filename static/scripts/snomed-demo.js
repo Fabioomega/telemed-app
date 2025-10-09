@@ -120,7 +120,6 @@ function resolveOverlaps(entities) {
 }
 
 function displayAnnotatedText(text, entities) {
-    console.log(entities);
     const annotatedTab = document.getElementById('annotatedTab');
 
     if (entities.length === 0) {
@@ -267,8 +266,6 @@ function displayEntities(entities) {
 
     entities.forEach((entity, idx) => {
         entity.meanings.forEach((meaning, meaningIdx) => {
-            console.log(entity.text);
-            console.log(meaning);
             const cuisDisplay = meaning.cui.map(_cui => `<span class="cui-badge">${_cui}</span>`).join('');
             let badges = '';
 

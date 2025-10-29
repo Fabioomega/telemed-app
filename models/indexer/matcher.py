@@ -1,7 +1,15 @@
+from typing import List, Tuple, Dict
 from .client import ClientBase
 from .dictionary import create_set_from_text, fix_sentence
-from .common import Keywords, CUIInfo, Spans, PairedText, strip_cui
-from typing import List, Tuple, Dict
+from .common import (
+    Keywords,
+    CUIInfo,
+    Spans,
+    PairedText,
+    strip_cui,
+    fix_spans_inplace_regex,
+)
+import logging
 import json
 
 SYS_PROMPT = """You're being given 2 reports, one of them is the original report in portuguese while the other is a translated version in english.
@@ -77,21 +85,15 @@ def format_json_into_desired_answer(text: str) -> List[PairedText]:
 
     seq = []
     for translated_phrase, original_phrase in obj.items():
-
         translated_phrase = filter_garbage(translated_phrase)
-        original_phrase = filter_garbage(original_phrase)
 
         seq.append(PairedText(original_phrase.strip(), translated_phrase.strip()))
 
     return seq
 
 
-def spell_check_pairs(
-    original_text: str, keywords: Keywords, pairs: List[PairedText]
-) -> PairedText:
+def spell_check_pairs(original_text: str, pairs: List[PairedText]) -> PairedText:
     original_words_set = create_set_from_text(original_text)
-    str_keywords = list(keywords.keys())
-
     new_pairs = [None for i in range(len(pairs))]
 
     for i, pair in enumerate(pairs):
@@ -102,38 +104,6 @@ def spell_check_pairs(
         new_pairs[i] = PairedText(original, match)
 
     return new_pairs
-
-
-def fix_spans_inplace(original: str, keywords: Keywords) -> Keywords:
-    raise NotImplementedError("Spans are not correct as of yet!")
-
-    original = original.lower()
-
-    repeated_offsets = {}
-    for original_sentence in keywords.keys():
-        sentence = original_sentence.lower()
-
-        offset = 0
-        if f := repeated_offsets.get(sentence):
-            offset = f
-
-        start = original.find(sentence[offset:])
-        if start == -1:
-            print(
-                f"[WARNING] The fucking ai just hallucinated '{original_sentence}' or it's a spelling mistake. Skipping!"
-            )
-            del keywords[original_sentence]
-            continue
-
-        end = start + len(sentence[offset:])
-
-        keywords[original_sentence] = keywords[original_sentence]._replace(
-            spans=Spans(start, end)
-        )
-
-        repeated_offsets[sentence] = end
-
-    return keywords
 
 
 def fuse_pairs_and_keywords(pairs: List[PairedText], keywords: Keywords) -> Keywords:
@@ -155,7 +125,7 @@ async def match_keywords(
     client: ClientBase,
     original_text: str,
     translated_text: str,
-    keywords: List[Keywords],
+    keywords: Keywords,
     verbose: bool = False,
 ) -> Keywords:
     just_keywords = strip_cui(keywords)
@@ -180,6 +150,10 @@ JSON Correlated Terms:"""
         )
     )
 
-    pairs = spell_check_pairs(original_text, keywords, pairs)
+    pairs = spell_check_pairs(original_text, pairs)
 
-    return fuse_pairs_and_keywords(pairs, keywords)
+    new_keywords = fuse_pairs_and_keywords(pairs, keywords)
+
+    fix_spans_inplace_regex(original_text, new_keywords)
+
+    return new_keywords

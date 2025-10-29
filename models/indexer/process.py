@@ -41,17 +41,13 @@ async def process_texts(
                     i += 1
                     continue
 
-                deduplicated_keywords = removed_duplicates(matched_keywords)
-
-                acc.append(keywords_to_beauty(deduplicated_keywords))
+                acc.append(keywords_to_beauty(matched_keywords))
                 break
         else:
             matched_keywords = await match_keywords(
                 client, texts[index], translations[index], keywords
             )
 
-            deduplicated_keywords = removed_duplicates(matched_keywords)
-
-            acc.append(keywords_to_beauty(deduplicated_keywords))
+            acc.append(keywords_to_beauty(matched_keywords))
 
     return {"texts": texts, "medicalTerms": acc}

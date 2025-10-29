@@ -4,7 +4,7 @@ import asyncio
 import pandas as pd
 from typing import NamedTuple, Union, List, Dict
 from pathlib import Path
-from .common import Keywords, CUIInfo, Spans
+from .common import Keywords, CUIInfo, Spans, fix_spans_inplace_regex
 
 
 class cTakePaths(NamedTuple):
@@ -169,7 +169,19 @@ async def index_texts(
     tables = get_tables_paths(Path("./output"))
     indexed_table = {}
     for table in tables:
-        indexed_table[table.original_number] = extract_keywords(table.table_path)
+
+        if len(texts) <= table.original_number:
+            continue
+
+        keywords = extract_keywords(table.table_path)
+        fix_spans_inplace_regex(
+            texts[table.original_number],
+            keywords,
+            use_lowercase=False,
+            remove_not_found=False,
+        )
+
+        indexed_table[table.original_number] = keywords
 
     return indexed_table
 

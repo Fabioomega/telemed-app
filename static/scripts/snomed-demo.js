@@ -61,21 +61,46 @@ async function getSoapAndEntities(text, useSoap) {
     }
 }
 
+function fuse_entities(indexedList) {
+    let entities = [];
+    let processed = new Set();
+
+    indexedList.forEach((entity, i) => {
+        if (processed.has(i)) return;
+
+        entities.push({
+            meanings: [entity],
+            start: entity.spans.start,
+            end: entity.spans.end
+        });
+
+        let last_idx = entities.length - 1;
+
+        for (let it = i + 1; it < indexedList.length; it++) {
+            if (entity.spans.start === indexedList[it].spans.start && entity.spans.end === indexedList[it].spans.end) {
+                entities[last_idx].meanings.push(indexedList[it]);
+                processed.add(it);
+            }
+        }
+    });
+
+    return entities;
+}
+
 function extractEntities(text, medicalTerms) {
     const entities = [];
 
-    // Check for negation and uncertainty context
-    Object.keys(medicalTerms).forEach(term => {
-        const regex = new RegExp('\\b' + term + '\\b', 'gi');
-        let match;
-        while ((match = regex.exec(text)) !== null) {
-            entities.push({
-                text: match[0],
-                meanings: medicalTerms[term.toLowerCase()],
-                start: match.index,
-                end: match.index + match[0].length
-            });
-        }
+    Object.values(medicalTerms).forEach(indexedList => {
+        fuse_entities(indexedList).forEach(entity => {
+            entities.push(
+                {
+                    text: text.substring(entity.start, entity.end),
+                    meanings: entity.meanings,
+                    start: entity.start,
+                    end: entity.end
+                }
+            )
+        });
     });
 
     return entities.sort((a, b) => a.start - b.start);
@@ -190,7 +215,7 @@ function showTooltip(event, entityIndex) {
                     </div>`;
         }
 
-        let cuisHtml = meaning.cui.map(_cui => `<span class="cui-badge">${_cui}</span>`).join('');
+        let cuisHtml = meaning.cuis.map(_cui => `<span class="cui-badge">${_cui}</span>`).join('');
 
         if (entity.meanings.length > 1) {
             tooltipContent += `<div class="tooltip-row">
@@ -266,7 +291,7 @@ function displayEntities(entities) {
 
     entities.forEach((entity, idx) => {
         entity.meanings.forEach((meaning, meaningIdx) => {
-            const cuisDisplay = meaning.cui.map(_cui => `<span class="cui-badge">${_cui}</span>`).join('');
+            const cuisDisplay = meaning.cuis.map(_cui => `<span class="cui-badge">${_cui}</span>`).join('');
             let badges = '';
 
             if (entity.meanings.length > 1) {

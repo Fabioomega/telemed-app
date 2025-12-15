@@ -1,4 +1,3 @@
-from .detection import detect_breasts
-from .predictor import BreastDetector
+from .managed_models import create_breast
 
-__all__ = ['detect_breasts', 'BreastDetector']
+__all__ = ["create_breast"]

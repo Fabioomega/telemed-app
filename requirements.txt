@@ -13,3 +13,4 @@ pandas
 rapidfuzz
 scipy
 regex
+ultralytics

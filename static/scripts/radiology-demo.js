@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadBtnTrigger = document.getElementById('uploadBtnTrigger'); // Button to trigger input
     const imagePreviewBox = document.getElementById('imagePreviewBox'); // The container div
     const uploadedImage = document.getElementById('uploadedImage');
+    const interestingRegionsPreviewImage = document.getElementById('interestingRegionsPreview');
 
     const analysisPlaceholder = document.getElementById('analysisPlaceholder');
     const aiOutputContainer = document.getElementById('aiOutputContainer'); // Holds all results cards
@@ -16,6 +17,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const generateBtn = document.getElementById('generateBtn');
     const completeBtn = document.getElementById('completeBtn');
 
+    const conditionsCard = document.getElementById('conditionsCard');
+    const reportCard = document.getElementById('reportCard');
+    const regionsPreviewCard = document.getElementById('regionsPreviewCard');
+
 
     // --- Variables ---
     let currentB64ImageFile = null; // Store the uploaded file reference
@@ -23,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalityEndpoint = '/modalidade';
     const regionEndpoint = '/regiao';
     const diseasesEndpoint = '/raio-x-doencas';
+    const fractureEndpoint = '/fracture';
     const completeReportEndpoint = "/completar-laudo";
     const generateReportEndpoint = "/gerar-laudo";
 
@@ -115,6 +121,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function fetchImageEndpointAsBlob(endpoint, base64Image) {
+        const body = JSON.stringify({
+            "img": base64Image
+        });
+
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: body,
+                signal: AbortSignal.timeout(300000)
+            });
+
+            const blob = await response.blob();
+            return blob;
+        } catch (error) {
+            console.warn(`While fetching from ${endpoint} an error happened!`);
+            console.warn(`The error: ${error.message}`);
+            return {};
+        }
+    }
+
     async function fetchCompleteEndpoint(endpoint, text, base64Image) {
         const body = JSON.stringify({
             "start": text,
@@ -138,6 +168,11 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn(`The error: ${error.message}`);
             return {};
         }
+    }
+
+    async function getFractureRegion(base64Image) {
+        let blob = await fetchImageEndpointAsBlob(fractureEndpoint, base64Image);
+        return URL.createObjectURL(blob);
     }
 
     async function getRegion(base64Image) {
@@ -207,35 +242,74 @@ document.addEventListener('DOMContentLoaded', () => {
         populateHeader(output);
     }
 
+    async function createFractureImagePreview(base64Image) {
+        let url = await getFractureRegion(base64Image);
+        console.log(url);
+        populateFracturePreview(url);
+        unsetHidden(regionsPreviewCard);
+    }
+
     async function createCheckboxes(base64Image) {
         let output = await getDiseases(base64Image);
         populateCheckboxes(output);
+        unsetHidden(conditionsCard);
     }
 
     async function createReport(base64Image) {
         let output = await getReport(base64Image);
         populateReport(output);
+        unsetHidden(reportCard);
     }
 
     async function populateAnalysis(base64Image) {
+        let analysisType = getSelectedAnalysisType();
+
         resetAIOutputs();
         setLoadingState(true);
 
-        await Promise.all([
+        let promises = [
             createHeader(base64Image),
-            createCheckboxes(base64Image),
             createReport(base64Image)
-        ]);
+        ]
+
+        if (analysisType === 'general') {
+            promises.push(createCheckboxes(base64Image));
+        } else if (analysisType === 'mammography') {
+
+        } else if (analysisType === 'fracture') {
+            promises.push(createFractureImagePreview(base64Image));
+        }
+
+        await Promise.all(promises);
 
         setLoadingState(false);
     }
 
     // --- UI Helper Functions ---
 
+    function setHidden(element) {
+        element.classList.add('hidden');
+    }
+
+    function unsetHidden(element) {
+        element.classList.remove('hidden');
+    }
+
+
+    function getSelectedAnalysisType() {
+        const selected = document.querySelector('input[name="analysisType"]:checked');
+        return selected ? selected.value : 'general';
+    }
+
     const hidePlaceholder = () => {
         // Hide the main analysis placeholder and show the results area
-        analysisPlaceholder.style.display = 'none';
-        aiOutputContainer.style.display = 'block';
+        setHidden(analysisPlaceholder);
+        unsetHidden(aiOutputContainer);
+    }
+
+    function populateFracturePreview(url) {
+        interestingRegionsPreviewImage.onload = () => URL.revokeObjectURL(url);
+        interestingRegionsPreviewImage.src = url;
     }
 
     function populateCheckboxes(diseases) {
@@ -294,7 +368,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return Array.from(checkedBoxes).map(cb => cb.value);
     }
 
-    // Updated Loading State to handle specific buttons or general analysis
     function setLoadingState(isLoading, buttonType = null) {
         const buttons = [generateBtn, completeBtn];
 
@@ -339,18 +412,23 @@ document.addEventListener('DOMContentLoaded', () => {
         // Clear report
         reportOutput.value = '';
         reportOutput.placeholder = 'AI report draft will appear here...';
+
+        // Hides everything that needs to be hidden
+        setHidden(conditionsCard);
+        setHidden(reportCard);
+        setHidden(regionsPreviewCard);
     }
 
     // Initial state setup
     function initializePage() {
-        analysisPlaceholder.style.display = 'block'; // Show placeholder text
-        aiOutputContainer.style.display = 'none'; // Hide results area
+        unsetHidden(analysisPlaceholder);
+        setHidden(aiOutputContainer);
         setLoadingState(false); // Ensure buttons are enabled
         // Disable action buttons until an image is loaded and analysed
         generateBtn.disabled = true;
         completeBtn.disabled = true;
         // Reset image preview area
-        uploadedImage.style.display = 'none';
+        setHidden(uploadedImage);
         uploadedImage.src = "#";
         imagePreviewBox.classList.remove('has-image');
         resetAIOutputs(); // Clear any stale data

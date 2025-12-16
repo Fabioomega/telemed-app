@@ -144,7 +144,7 @@ body {
     /* Padding inside the box */
 }
 
-.image-preview-box::before {
+.image-preview-box-text::before {
     content: 'Image preview will appear here';
     color: var(--text-placeholder);
     font-style: italic;
@@ -293,6 +293,14 @@ body {
     cursor: pointer;
 }
 
+.analysis-type-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 1.2rem;
+    justify-content: center;
+}
+
 
 /* Report Section Styling */
 .report-card {}
@@ -386,6 +394,11 @@ body {
     stroke: var(--text-placeholder);
 }
 
+/* Display None */
+
+.hidden {
+    display: none;
+}
 
 /* Loading Animation */
 @keyframes spin {

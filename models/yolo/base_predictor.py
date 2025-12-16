@@ -3,21 +3,21 @@ import numpy as np
 from typing import List, Tuple, Dict, Any, TypedDict
 
 
-class BreastDetectorOutputFormat(TypedDict):
+class DetectorOutputFormat(TypedDict):
     _class: str
     confidence: float
     # centro x, centro y, largura, altura
     bbox: Tuple[int, int, int, int]
 
 
-class BreastDetector:
+class Detector:
 
     def __init__(self, model_path: str):
         self.model = YOLO(model_path)
 
-    def predict(
+    def _predict(
         self, images: List[np.ndarray], conf: float = 0.5
-    ) -> List[BreastDetectorOutputFormat]:
+    ) -> List[DetectorOutputFormat]:
 
         results = self.model.predict(images, conf=conf)
 
@@ -39,12 +39,7 @@ class BreastDetector:
 
         return batch_detections
 
+    def plot(self, images: List[np.ndarray], conf: float = 0.5) -> List[np.ndarray]:
+        results = self.model.predict(images, conf=conf)
 
-import pathlib
-
-_BASE_PATH = pathlib.Path(__file__).parent
-_WEIGHTS_PATH = _BASE_PATH.joinpath("weights")
-
-load_breast_detector_model = lambda: BreastDetector(
-    _WEIGHTS_PATH.joinpath("TODO.pt"),
-)
+        return [result.plot() for result in results]

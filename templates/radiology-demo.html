@@ -20,12 +20,28 @@
         <!-- Image Section (Left) -->
         <section class="image-section">
             <h2 class="section-title">Image Upload</h2>
+            <div class="analysis-type-selector">
+                <div class="checkbox-item">
+                    <input type="radio" id="analysis_general" name="analysisType" value="general" checked>
+                    <label for="analysis_general">General Analysis</label>
+                </div>
+
+                <div class="checkbox-item">
+                    <input type="radio" id="analysis_mammo" name="analysisType" value="mammography">
+                    <label for="analysis_mammo">Mammography Analysis</label>
+                </div>
+
+                <div class="checkbox-item">
+                    <input type="radio" id="analysis_fracture" name="analysisType" value="fracture">
+                    <label for="analysis_fracture">Fracture Analysis</label>
+                </div>
+            </div>
             <div class="upload-container">
-                <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                <input type="file" id="imageUpload" class="hidden" accept="image/*">
                 <button class="upload-btn" id="uploadBtnTrigger">Choose Image</button>
                 <p class="upload-instructions">Upload a medical image (e.g., X-Ray, CT, MRI)</p>
             </div>
-            <div class="image-preview-box" id="imagePreviewBox">
+            <div class="image-preview-box image-preview-box-text" id="imagePreviewBox">
                 <img id="uploadedImage" src="#" alt="Uploaded medical image preview">
             </div>
         </section>
@@ -38,7 +54,7 @@
                 <!-- Placeholder shown initially -->
                 <p class="placeholder-text" id="analysisPlaceholder">Upload an image to view AI analysis results.</p>
 
-                <div class="ai-output-container" id="aiOutputContainer" style="display: none;">
+                <div class="ai-output-container hidden" id="aiOutputContainer">
 
                     <div class="info-card">
                         <h3 class="card-title">Detected Properties</h3>
@@ -54,14 +70,22 @@
                         </div>
                     </div>
 
-                    <div class="info-card">
+                    <div class="info-card hidden" id="regionsPreviewCard">
+                        <h3 class="card-title">Detected Regions of Interest</h3>
+
+                        <div class="image-preview-box">
+                            <img id="interestingRegionsPreview" src="#">
+                        </div>
+                    </div>
+
+                    <div class="info-card hidden" id="conditionsCard">
                         <h3 class="card-title">Potential Conditions Identified</h3>
                         <div id="diseaseCheckboxes" class="checkboxes-content">
                             <span class="placeholder-value">Awaiting analysis...</span>
                         </div>
                     </div>
 
-                    <div class="info-card report-card">
+                    <div class="info-card report-card hidden" id="reportCard">
                         <h3 class="card-title">AI Generated Report Draft</h3>
                         <div class="report-container">
                             <textarea id="reportOutput" rows="10"

@@ -1,5 +1,6 @@
+import cv2
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -8,12 +9,15 @@ from models import (
     create_modality,
     create_region,
     create_ecg_classifier,
+    create_fracture,
 )
+
 from decode import base64_to_img
 from pydantic import BaseModel
 from typing import Dict, List
 from environment_loader import Environment
-from models.indexer.client import Qwen3OllamaClient
+
+from models.indexer.client import Qwen3OllamaClient, Qwen3OpenAiClient
 from models.indexer import index_texts, Keywords
 
 
@@ -42,6 +46,9 @@ ecg_classifier_streamer = create_ecg_classifier(
 modality_streamer = create_modality(CUDA_DEVICES, BATCH_SIZE, MAX_LATENCY, WORKER_NUM)
 
 region_streamer = create_region(CUDA_DEVICES, BATCH_SIZE, MAX_LATENCY, WORKER_NUM)
+
+fracture_streamer = create_fracture(CUDA_DEVICES, BATCH_SIZE, MAX_LATENCY, WORKER_NUM)
+
 
 env = Environment("env.json")
 client = Qwen3OllamaClient()
@@ -86,10 +93,13 @@ def diseases(img: ModelInput) -> Dict[str, bool]:
 @app.post("/ecg-descritores")
 def read_route(img: ModelInput) -> Dict[str, str | List[str]]:
     decoded_img = base64_to_img(img.img)
-    
+
     from models.ecg.model_api import load_clip_model
+
     direct_model = load_clip_model()
-    output: Dict[str, str | List[str]] = direct_model.predict([decoded_img], threshold=0.2)[0]
+    output: Dict[str, str | List[str]] = direct_model.predict(
+        [decoded_img], threshold=0.2
+    )[0]
     return output
 
 
@@ -105,6 +115,15 @@ def region(img: ModelInput) -> Dict[str, bool]:
     decoded_img = base64_to_img(img.img)
     output = region_streamer.predict([decoded_img])[0]
     return output
+
+
+@app.post("/fracture")
+def region(img: ModelInput) -> Dict[str, bool]:
+    decoded_img = base64_to_img(img.img)
+    img_matrix = fracture_streamer.predict([decoded_img])[0]
+    success, encoded = cv2.imencode(".png", img_matrix)
+
+    return Response(content=encoded.tobytes(), media_type="image/png")
 
 
 @app.post("/index")

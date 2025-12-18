@@ -11,13 +11,18 @@ from models import (
 )
 from decode import base64_to_img
 from pydantic import BaseModel
-from typing import Dict, List
+from typing import Dict, List, Any
 from completion import LLMOllama, LLMOpenAI, Block
 from env import load_env
 
 
 class ModelInput(BaseModel):
     img: str
+
+
+class ECGInput(BaseModel):
+    img: str
+    tabular_data: Dict[str, Any] = {}
 
 
 class LLMCompleteInput(BaseModel):
@@ -96,12 +101,16 @@ def diseases(img: ModelInput) -> Dict[str, bool]:
 
 
 @app.post("/ecg-descritores")
-def read_route(img: ModelInput) -> Dict[str, str | List[str]]:
-    decoded_img = base64_to_img(img.img)
+def read_route(data: ECGInput) -> Dict[str, str | List[str]]:
+    decoded_img = base64_to_img(data.img)
     
     from models.ecg.model_api import load_clip_model
     direct_model = load_clip_model()
-    output: Dict[str, str | List[str]] = direct_model.predict([decoded_img], threshold=0.2)[0]
+    output: Dict[str, str | List[str]] = direct_model.predict(
+        [decoded_img], 
+        tabular_data=[data.tabular_data],
+        threshold=0.2
+    )[0]
     return output
 
 

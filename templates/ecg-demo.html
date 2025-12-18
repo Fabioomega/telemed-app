@@ -6,36 +6,91 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="{{ url_for('static', path='styles/ecg-demo.css') }}" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
-    <title>ECG Upload Demo</title>
+    <title>Demo de Upload ECG</title>
 </head>
 
 <body>
     <div class="container">
-        <div class="image-section">
-            <h2 class="title">Upload ECG Image</h2>
+        <div class="form-section">
+            <h2 class="title">Informações do Paciente</h2>
+            <!-- Patient Data Form -->
+            <div class="patient-data-section">
+                <form id="patientForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="idade">Idade:</label>
+                            <input type="number" id="idade" name="idade_paciente" placeholder="Anos">
+                        </div>
+                        <div class="form-group">
+                            <label for="sexo">Sexo:</label>
+                            <select id="sexo" name="sexo_paciente">
+                                <option value="">Selecione</option>
+                                <option value="M">Masculino</option>
+                                <option value="F">Feminino</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="altura">Altura (cm):</label>
+                            <input type="number" id="altura" name="altura" placeholder="cm">
+                        </div>
+                        <div class="form-group">
+                            <label for="peso">Peso (kg):</label>
+                            <input type="number" id="peso" name="peso" placeholder="kg">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="intensidadeDorExame">Intensidade Dor (Exame):</label>
+                            <input type="number" id="intensidadeDorExame" name="intensidade_dor_exame" min="0" max="10" placeholder="0-10">
+                        </div>
+                        <div class="form-group">
+                            <label for="intensidadeDorIndicacao">Intensidade Dor (Indicação):</label>
+                            <input type="number" id="intensidadeDorIndicacao" name="intensidade_dor_indicacao" min="0" max="10" placeholder="0-10">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group-checkbox">
+                        <label><input type="checkbox" name="dor_momento_exame_exame"> Dor no momento do exame</label>
+                        <label><input type="checkbox" name="dor_momento_exame_indicacao"> Dor na indicação</label>
+                        <label><input type="checkbox" name="classificar_dor_toracica"> Dor torácica</label>
+                        <label><input type="checkbox" name="pre_operatorio"> Pré-operatório</label>
+                        <label><input type="checkbox" name="febre_reumatica"> Febre reumática</label>
+                    </div>
+                    <input type="file" id="jsonUpload" accept="application/json,.json" style="display: none;">
+                    <button class="upload-btn" id="jsonBtn" style="margin-top: 1rem; width: 100%; background: linear-gradient(135deg, #4CAF50, #45a049);">Carregar Dados JSON</button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="upload-section">
+            <h2 class="title">Upload de Imagem ECG</h2>
             <div class="upload-container">
                 <input type="file" id="imageUpload" accept="image/*,application/pdf" style="display: none;">
-                <button class="upload-btn" id="uploadBtn">Choose Image</button>
-                <p class="upload-instructions">Supported formats: JPG, PNG, PDF, GIF</p>
+                <button class="upload-btn" id="uploadBtn">Escolher Imagem</button>
+                <button class="upload-btn" id="analyzeBtn" style="margin-top: 0.5rem; display: none; background: linear-gradient(135deg, #FF6B6B, #FF8E53);">Analisar ECG</button>
             </div>
             <div class="image-container" id="imageContainer">
-                <img id="imagePreview" src="" alt="Image Preview">
+                <img id="imagePreview" src="" alt="Pré-visualização da Imagem">
             </div>
         </div>
 
         <div class="result-section">
-            <h2 class="title">AI Analysis Results</h2>
+            <h2 class="title">Resultados da Análise IA</h2>
             <div id="loadingSpinner" class="spinner-wrapper" style="display: none;">
                 <div class="spinner"></div>
-                <p class="spinner-text">Analyzing image...</p>
+                <p class="spinner-text">Analisando imagem...</p>
             </div>
             <div id="resultContainer" class="result-card">
                 <div class="gravity-container">
-                    <div class="gravity-label">Classification:</div>
+                    <div class="gravity-label">Classificação:</div>
                     <div class="gravity-value" id="gravityValue"></div>
                 </div>
             </div>
-            <p class="placeholder-text" id="placeholderText">Upload an image to see AI analysis results</p>
+            <p class="placeholder-text" id="placeholderText">Faça upload de uma imagem para ver os resultados da análise IA</p>
         </div>
     </div>
     <script src="{{ url_for('static', path='scripts/ecg-demo.js') }}"></script>
